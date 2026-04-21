@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Immobilienkredit-Rechner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ── Themes ─────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:       #0e0f11;
+  --surface:  #161719;
+  --surface2: #1d1f22;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.13);
+  --text:     #f0ede8;
+  --muted:    #888580;
+  --hint:     #4a4845;
+  --shadow:   rgba(0,0,0,0.4);
+  --noise:    rgba(255,255,255,0.015);
+  --toggle-icon: '☀';
+}
+[data-theme="light"] {
+  --bg:       #f2f0eb;
+  --surface:  #ffffff;
+  --surface2: #f7f5f1;
+  --border:   rgba(0,0,0,0.08);
+  --border2:  rgba(0,0,0,0.14);
+  --text:     #1a1917;
+  --muted:    #6b6966;
+  --hint:     #b0ada8;
+  --shadow:   rgba(0,0,0,0.06);
+  --noise:    rgba(0,0,0,0.012);
+  --toggle-icon: '☾';
+}
+
+/* ── Shared semantic colors ──────────────────────────────────── */
+:root {
+  --accent:       #c8a96e;
+  --red:          #c46a5a;
+  --blue:         #5a85c4;
+  --green:        #6aab90;
+  --purple:       #9a7ec8;
+  --purple-light: #b89de0;
+  --font-serif: 'DM Serif Display', serif;
+  --font-sans:  'DM Sans', sans-serif;
+  --font-mono:  'DM Mono', monospace;
+  --radius:    10px;
+  --radius-lg: 16px;
+}
+
+/* ── Base ────────────────────────────────────────────────────── */
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background 0.25s, color 0.25s;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='none'/%3E%3Cpath d='M0 40L40 0M-10 10L10 -10M30 50L50 30' stroke='rgba(128,128,128,0.04)' stroke-width='1'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+
+/* ── Layout ──────────────────────────────────────────────────── */
+.wrapper {
+  width: 100%; max-width: 1400px;
+  margin: 0 auto; padding: 40px 16px 80px;
+  position: relative; z-index: 1;
+}
+
+header {
+  margin-bottom: 40px; border-bottom: 1px solid var(--border); padding-bottom: 28px;
+  display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;
+}
+.header-left {}
+.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
+
+.header-label { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
+h1 { font-family: var(--font-serif); font-size: clamp(24px, 4vw, 38px); font-weight: 400; line-height: 1.15; color: var(--text); margin-bottom: 6px; }
+.header-sub { color: var(--muted); font-size: 13px; font-weight: 300; }
+
+.gesamtvolumen { text-align: right; }
+.gesamtvolumen-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
+.gesamtvolumen-value { font-family: var(--font-serif); font-size: 26px; color: var(--accent); }
+
+/* Theme toggle */
+.theme-toggle {
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: 20px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  display: flex; align-items: center; gap: 7px;
+  transition: border-color 0.15s, color 0.15s;
+  white-space: nowrap;
+}
+.theme-toggle:hover { border-color: var(--accent); color: var(--text); }
+.theme-toggle .icon { font-size: 14px; }
+
+.grid-layout { display: grid; grid-template-columns: 280px minmax(0,1fr); gap: 20px; align-items: start; }
+@media (max-width: 780px) { .grid-layout { grid-template-columns: 1fr; } }
+
+.sidebar { display: flex; flex-direction: column; gap: 16px; }
+.main    { display: flex; flex-direction: column; gap: 20px; }
+
+/* ── Cards ───────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  transition: background 0.25s, border-color 0.25s;
+}
+.card.kfw-card { border-color: rgba(154,126,200,0.3); }
+.card.miete-card { border-color: rgba(196,106,90,0.25); }
+.badge-miete { background: rgba(196,106,90,0.12); color: #e0917f; font-size: 9px; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.07em; font-family: var(--font-mono); }
+.miete-hint { font-size: 11px; color: var(--hint); font-family: var(--font-mono); line-height: 1.5; margin-top: 2px; }
+
+.card-title {
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+}
+.badge {
+  background: rgba(154,126,200,0.15); color: var(--purple-light);
+  font-size: 9px; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.07em;
+}
+
+/* ── Form elements ───────────────────────────────────────────── */
+.field { margin-bottom: 14px; }
+.field:last-child { margin-bottom: 0; }
+
+label {
+  display: block; font-size: 11px; color: var(--muted);
+  margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.input-wrap { position: relative; display: flex; align-items: center; }
+.input-suffix {
+  position: absolute; right: 11px;
+  font-size: 12px; color: var(--hint);
+  pointer-events: none; font-family: var(--font-mono);
+}
+
+input[type="number"] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  padding: 8px 32px 8px 11px;
+  outline: none;
+  transition: border-color 0.15s, background 0.25s;
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button { display: none; }
+input[type="number"]:focus { border-color: var(--accent); }
+.kfw-card input[type="number"]:focus { border-color: var(--purple); }
+
+/* Two-column field row — equal, no overflow */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.field-row .field { margin-bottom: 0; }
+
+/* Slider */
+.slider-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
+input[type="range"] {
+  flex: 1; min-width: 0; height: 3px;
+  -webkit-appearance: none; appearance: none;
+  background: var(--border2); border-radius: 2px; outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px;
+  border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+}
+input[type="range"]::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+}
+.kfw-card input[type="range"]::-webkit-slider-thumb { background: var(--purple); }
+.kfw-card input[type="range"]::-moz-range-thumb { background: var(--purple); }
+.slider-val { font-family: var(--font-mono); font-size: 15px; font-weight: 500; color: var(--accent); min-width: 48px; text-align: right; white-space: nowrap; }
+.slider-val.purple { color: var(--purple-light); }
+
+/* Tranche rows */
+.tranche-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.tranche-row:last-child { border-bottom: none; }
+.tranche-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.tranche-label { font-size: 12px; color: var(--text); white-space: nowrap; flex-shrink: 0; }
+.tranche-pct { font-family: var(--font-mono); font-size: 10px; color: var(--muted); flex: 1; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; min-width: 0; position: relative; cursor: default; }
+.tranche-pct::after {
+  content: attr(data-tooltip);
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  background: var(--surface2); border: 1px solid var(--border2);
+  color: var(--text); font-size: 11px; padding: 4px 9px;
+  border-radius: 6px; white-space: nowrap; pointer-events: none;
+  opacity: 0; transition: opacity 0.15s;
+  z-index: 10; box-shadow: 0 4px 12px var(--shadow);
+}
+.tranche-pct:hover::after { opacity: 1; }
+.tranche-month { width: 50px; flex-shrink: 0; }
+.tranche-month input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 6px; color: var(--text); font-family: var(--font-mono);
+  font-size: 13px; padding: 5px 6px; outline: none; text-align: center;
+  transition: border-color 0.15s; -moz-appearance: textfield;
+}
+.tranche-month input::-webkit-inner-spin-button { display: none; }
+.tranche-month input:focus { border-color: var(--accent); }
+
+/* ── Metrics ─────────────────────────────────────────────────── */
+.metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+@media (max-width: 560px) { .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+
+.metric {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px 16px;
+  transition: background 0.25s;
+}
+.metric-label { font-size: 10px; color: var(--muted); margin-bottom: 5px; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.06em; }
+.metric-value { font-family: var(--font-serif); font-size: clamp(15px, 1.8vw, 21px); color: var(--text); }
+.metric.accent { border-color: rgba(200,169,110,0.3); }
+.metric.accent .metric-value { color: var(--accent); }
+.metric.kfw { border-color: rgba(154,126,200,0.25); }
+.metric.kfw .metric-value { color: var(--purple-light); }
+.metric.combined { border-color: rgba(106,171,144,0.3); }
+.metric.combined .metric-value { color: var(--green); }
+
+/* ── Chart ───────────────────────────────────────────────────── */
+.chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; transition: background 0.25s; }
+.legend { display: flex; gap: 14px; margin-bottom: 16px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
+.legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+#chart-wrap { position: relative; width: 100%; }
+
+/* ── KfW info strip ──────────────────────────────────────────── */
+.kfw-info-strip {
+  background: rgba(154,126,200,0.06); border: 1px solid rgba(154,126,200,0.18);
+  border-radius: var(--radius); padding: 12px 14px;
+  display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 14px;
+}
+.kfw-info-item { text-align: center; }
+.kfw-info-label { font-size: 9px; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; line-height: 1.3; }
+.kfw-info-val { font-family: var(--font-serif); font-size: 17px; color: var(--purple-light); }
+
+/* ── Table ───────────────────────────────────────────────────── */
+.tbl-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+thead th {
+  font-family: var(--font-mono); font-size: 9px; letter-spacing: 0.07em; text-transform: uppercase;
+  color: var(--muted); padding: 7px 10px; text-align: right; font-weight: 400; white-space: nowrap;
+  border-bottom: 1px solid var(--border2);
+}
+thead th:first-child { text-align: left; }
+thead .group-row th { border-bottom: none; border-top: 1px solid var(--border); padding: 8px 10px 3px; color: var(--hint); font-size: 9px; }
+thead .group-row th.g-main  { color: rgba(90,133,196,0.7); }
+thead .group-row th.g-kfw   { color: rgba(154,126,200,0.7); }
+thead .group-row th.g-total { color: rgba(106,171,144,0.7); }
+
+tbody td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); font-family: var(--font-mono); color: var(--text); white-space: nowrap; font-size: 12px; }
+tbody td:first-child { text-align: left; font-family: var(--font-sans); font-size: 12px; color: var(--muted); }
+tbody tr.last-row td        { background: rgba(200,169,110,0.05); }
+tbody tr.volltilgung-row td { background: rgba(106,171,144,0.06); }
+tbody tr.volltilgung-row td.c-total { font-size: 13px; }
+
+.zinsfrei { color: var(--hint); font-style: italic; }
+.c-bereit { color: var(--red); }
+.c-tilg   { color: var(--green); }
+.c-kzins  { color: var(--purple-light); }
+.c-ktilg  { color: var(--purple); }
+.c-total  { color: var(--green); font-weight: 500; }
+
+.footnote { font-size: 11px; color: var(--hint); margin-top: 12px; line-height: 1.7; font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <header>
+    <div class="header-left">
+      <div class="header-label">Finanzierungsplanung</div>
+      <h1>Immobilienkredit-<br>Rechner</h1>
+      <p class="header-sub">Hauptdarlehen + KfW · Tranchenweise Auszahlung · Tilgungsphase</p>
+    </div>
+    <div class="header-right">
+      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">
+        <span class="icon">☀</span><span id="themeLabel">Tagmodus</span>
+      </button>
+      <div class="gesamtvolumen">
+        <div class="gesamtvolumen-label">Gesamtfinanzierung</div>
+        <div class="gesamtvolumen-value" id="gesamt-vol">–</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="grid-layout">
+    <div class="sidebar">
+
+      <!-- Hauptdarlehen -->
+      <div class="card">
+        <div class="card-title">Hauptdarlehen</div>
+        <div class="field">
+          <label>Kreditbetrag</label>
+          <div class="input-wrap"><input type="number" id="total" value="450000" min="10000" max="5000000" step="1000"><span class="input-suffix">€</span></div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Zinssatz p.a.</label>
+            <div class="input-wrap"><input type="number" id="zins" value="3.75" min="0.1" max="15" step="0.05"><span class="input-suffix">%</span></div>
+          </div>
+          <div class="field">
+            <label>Bereitst.-zinsen/Mo.</label>
+            <div class="input-wrap"><input type="number" id="bereit" value="0.25" min="0" max="1" step="0.05"><span class="input-suffix">%</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Bereitstellungszinsfreie Zeit</label>
+          <div class="input-wrap"><input type="number" id="freeMonate" value="12" min="0" max="36" step="1"><span class="input-suffix">Mo.</span></div>
+        </div>
+        <div class="field">
+          <label>Tilgungssatz p.a. (ab Bauabnahme)</label>
+          <div class="slider-row">
+            <input type="range" id="tilgSlider" min="0.5" max="5" step="0.1" value="2">
+            <div class="slider-val" id="tilgVal">2,0 %</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KfW -->
+      <div class="card kfw-card">
+        <div class="card-title">KfW-Darlehen <span class="badge">Förderkredit</span></div>
+        <div class="field">
+          <label>KfW-Betrag</label>
+          <div class="input-wrap"><input type="number" id="kfw-total" value="100000" min="0" max="2000000" step="1000"><span class="input-suffix">€</span></div>
+        </div>
+        <div class="field-row">
+          <div class="field">
+            <label>Zinssatz p.a.</label>
+            <div class="input-wrap"><input type="number" id="kfw-zins" value="2.50" min="0.1" max="15" step="0.05"><span class="input-suffix">%</span></div>
+          </div>
+          <div class="field">
+            <label>Tilgungsfreie Anlaufzeit</label>
+            <div class="input-wrap"><input type="number" id="kfw-anlauf" value="2" min="0" max="10" step="1"><span class="input-suffix">J.</span></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Tilgungssatz p.a. (nach Anlaufzeit)</label>
+          <div class="slider-row">
+            <input type="range" id="kfw-tilgSlider" min="0.5" max="8" step="0.1" value="3">
+            <div class="slider-val purple" id="kfw-tilgVal">3,0 %</div>
+          </div>
+        </div>
+        <div class="kfw-info-strip" id="kfw-strip"></div>
+      </div>
+
+      <!-- Miete -->
+      <div class="card miete-card">
+        <div class="card-title">Aktuelle Miete <span class="badge-miete">Bauzeit</span></div>
+        <div class="field" style="margin-bottom:8px">
+          <label>Monatliche Kaltmiete</label>
+          <div class="input-wrap"><input type="number" id="miete" value="1200" min="0" max="10000" step="50"><span class="input-suffix">€</span></div>
+        </div>
+        <div class="miete-hint">Wird zur Kreditrate addiert, solange die Bauabnahme noch aussteht.</div>
+      </div>
+
+      <!-- Tranchen -->
+      <div class="card">
+        <div class="card-title">Auszahlungstranchen (Hauptdarlehen)</div>
+        <div id="tranchen-list"></div>
+      </div>
+
+    </div><!-- /sidebar -->
+
+    <div class="main">
+      <div class="metrics" id="metrics"></div>
+
+      <div class="chart-card">
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#5a85c4"></div>Zinsen (Haupt)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#c46a5a"></div>Bereitstellungszinsen</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#6aab90"></div>Tilgung (Haupt)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#9a7ec8"></div>Zinsen (KfW)</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#b89de0"></div>Tilgung (KfW)</div>
+        </div>
+        <div id="chart-wrap"><canvas id="myChart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Detailübersicht</div>
+        <div class="tbl-wrap"><table id="tbl"></table></div>
+        <div class="footnote">
+          Bereitstellungszinsen auf nicht abgerufenen Hauptdarlehensbetrag &nbsp;·&nbsp;
+          Haupttilgung ab Bauabnahme &nbsp;·&nbsp;
+          KfW-Zinsen laufen ab Monat 1 auf den vollen KfW-Betrag &nbsp;·&nbsp;
+          KfW-Tilgung beginnt nach Ablauf der tilgungsfreien Anlaufzeit
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Storage key ───────────────────────────────────────────────
+const STORE_KEY = 'immorechner_v1';
+
+// ── Constants ─────────────────────────────────────────────────
+const TRANCHES_DEF = [
+  { label: 'Bauantrag',      pct: 0.05 },
+  { label: 'Bodenplatte',    pct: 0.15 },
+  { label: 'Dacheindeckung', pct: 0.45 },
+  { label: 'Installation',   pct: 0.10 },
+  { label: 'Estrich',        pct: 0.10 },
+  { label: 'Fließen',        pct: 0.05 },
+  { label: 'Bauabnahme',     pct: 0.10 },
+];
+const DEFAULT_MONTHS = [1, 3, 9, 14, 17, 20, 23];
+const DEFAULT_INPUTS = {
+  total: 450000, zins: 3.75, bereit: 0.25, freeMonate: 12,
+  'kfw-total': 100000, 'kfw-zins': 2.50, 'kfw-anlauf': 2,
+  tilgSlider: 2, 'kfw-tilgSlider': 3,
+  miete: 1200,
+};
+
+let months    = [...DEFAULT_MONTHS];
+let tilgRate  = 0.02;
+let kfwTilgRate = 0.03;
+let chart     = null;
+
+// ── Theme ─────────────────────────────────────────────────────
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  const btn = document.getElementById('themeBtn');
+  const lbl = document.getElementById('themeLabel');
+  if (t === 'light') { btn.querySelector('.icon').textContent = '☾'; lbl.textContent = 'Nachtmodus'; }
+  else               { btn.querySelector('.icon').textContent = '☀'; lbl.textContent = 'Tagmodus'; }
+}
+function toggleTheme() {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const next = cur === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  saveState();
+  if (chart) { chart.destroy(); chart = null; renderChart(buildPhases(getParams()), getParams()); }
+}
+
+// ── Persistence ───────────────────────────────────────────────
+function saveState() {
+  const state = {
+    theme: document.documentElement.getAttribute('data-theme'),
+    months,
+    tilgRate,
+    kfwTilgRate,
+    inputs: {},
+  };
+  Object.keys(DEFAULT_INPUTS).forEach(id => {
+    const el = document.getElementById(id);
+    if (el) state.inputs[id] = el.value;
+  });
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (s.theme) applyTheme(s.theme);
+    if (s.months && s.months.length === DEFAULT_MONTHS.length) months = s.months;
+    if (s.tilgRate)    tilgRate    = s.tilgRate;
+    if (s.kfwTilgRate) kfwTilgRate = s.kfwTilgRate;
+    if (s.inputs) {
+      Object.entries(s.inputs).forEach(([id, val]) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val;
+      });
+    }
+    // Sync slider display values
+    document.getElementById('tilgVal').textContent     = fmt(parseFloat(document.getElementById('tilgSlider').value), 1) + ' %';
+    document.getElementById('kfw-tilgVal').textContent = fmt(parseFloat(document.getElementById('kfw-tilgSlider').value), 1) + ' %';
+    tilgRate    = parseFloat(document.getElementById('tilgSlider').value) / 100;
+    kfwTilgRate = parseFloat(document.getElementById('kfw-tilgSlider').value) / 100;
+  } catch(e) {}
+}
+
+// ── Tranche inputs ────────────────────────────────────────────
+const list = document.getElementById('tranchen-list');
+TRANCHES_DEF.forEach((t, i) => {
+  const row = document.createElement('div');
+  row.className = 'tranche-row';
+  row.innerHTML = `
+    <div class="tranche-dot"></div>
+    <div class="tranche-label">${t.label}</div>
+    <div class="tranche-pct" id="pct-${i}">${fmt(t.pct*100,0)} %</div>
+    <div class="tranche-month"><input type="number" id="m${i}" value="${DEFAULT_MONTHS[i]}" min="1" max="360"></div>
+  `;
+  list.appendChild(row);
+  row.querySelector('input').addEventListener('change', e => {
+    months[i] = Math.max(1, parseInt(e.target.value) || DEFAULT_MONTHS[i]);
+    enforce(); saveState(); calculate();
+  });
+});
+
+// ── Listeners ─────────────────────────────────────────────────
+Object.keys(DEFAULT_INPUTS).forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', () => { saveState(); calculate(); });
+});
+
+document.getElementById('tilgSlider').addEventListener('input', e => {
+  tilgRate = parseFloat(e.target.value) / 100;
+  document.getElementById('tilgVal').textContent = fmt(parseFloat(e.target.value), 1) + ' %';
+  saveState(); calculate();
+});
+document.getElementById('kfw-tilgSlider').addEventListener('input', e => {
+  kfwTilgRate = parseFloat(e.target.value) / 100;
+  document.getElementById('kfw-tilgVal').textContent = fmt(parseFloat(e.target.value), 1) + ' %';
+  saveState(); calculate();
+});
+
+// ── Helpers ───────────────────────────────────────────────────
+function eur(v) { return v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }); }
+function fmt(v, dec=1) { return v.toLocaleString('de-DE', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+
+function getParams() {
+  return {
+    total:     parseFloat(document.getElementById('total').value)     || 450000,
+    zinsJahr:  parseFloat(document.getElementById('zins').value)      / 100 || 0.0375,
+    bereitM:   parseFloat(document.getElementById('bereit').value)    / 100 || 0.0025,
+    freeM:     parseInt(document.getElementById('freeMonate').value)  || 12,
+    kfwTotal:  parseFloat(document.getElementById('kfw-total').value) || 0,
+    kfwZins:   parseFloat(document.getElementById('kfw-zins').value)  / 100 || 0.025,
+    kfwAnlauf: parseInt(document.getElementById('kfw-anlauf').value)  || 0,
+    miete:     parseFloat(document.getElementById('miete').value)     || 0,
+  };
+}
+
+function enforce() {
+  for (let i = 1; i < months.length; i++) {
+    if (months[i] <= months[i-1]) {
+      months[i] = months[i-1] + 1;
+      document.getElementById('m'+i).value = months[i];
+    }
+  }
+}
+
+function laufzeit(tilgP, zinsP) {
+  if (tilgP <= 0) return null;
+  const mr = zinsP / 12;
+  const n = -Math.log(1 - mr / (tilgP/12 + mr)) / Math.log(1 + mr);
+  return Math.ceil(n / 12);
+}
+
+function kfwForPhase(p, phaseStartMonth) {
+  if (p.kfwTotal <= 0) return { zins: 0, tilg: 0 };
+  const mr = p.kfwZins / 12;
+  const anlaufM = p.kfwAnlauf * 12;
+  const inAnlauf = phaseStartMonth <= anlaufM;
+  return { zins: p.kfwTotal * mr, tilg: inAnlauf ? 0 : p.kfwTotal * kfwTilgRate / 12 };
+}
+
+function buildPhases(p) {
+  const { total, zinsJahr, bereitM, freeM } = p;
+  const MR = zinsJahr / 12;
+  const phases = [];
+  const amounts = TRANCHES_DEF.map(t => t.pct * total);
+  const kfwAnlaufM = p.kfwAnlauf * 12;
+
+  for (let i = 0; i < TRANCHES_DEF.length; i++) {
+    const sm = months[i];
+    const em = i < TRANCHES_DEF.length - 1 ? months[i+1] - 1 : null;
+    const dis = amounts.slice(0, i+1).reduce((a,b) => a+b, 0);
+    const und = total - dis;
+    const reg = dis * MR;
+    const isLast = i === TRANCHES_DEF.length - 1;
+
+    const push = (s, e, bereitAktiv) => {
+      const bi   = bereitAktiv && und > 0 ? und * bereitM : 0;
+      const tilg = isLast ? total * tilgRate / 12 : 0;
+      const kfw  = kfwForPhase(p, s);
+      const mainTotal = reg + bi + tilg;
+      const inAnlauf = p.kfwTotal > 0 && kfw.tilg === 0 && p.kfwAnlauf > 0;
+      let label = TRANCHES_DEF[i].label;
+      if (isLast && kfwAnlaufM > 0) {
+        if (e !== null && s === months[i]) label = 'Bauabnahme (KfW Anlauf)';
+        else if (e !== null && inAnlauf)   label = 'KfW tilgungsfrei';
+        else if (s > kfwAnlaufM)           label = 'Volltilgung';
+        else if (s === months[i])          label = 'Bauabnahme';
+      }
+      phases.push({
+        label, sm: s, em: e, dis, und, reg, bi, tilg, mainTotal,
+        kfwZins: kfw.zins, kfwTilg: kfw.tilg,
+        combined: mainTotal + kfw.zins + kfw.tilg,
+        bereitAktiv, isLast, zinsfreiPhase: !bereitAktiv && und > 0,
+        kfwInAnlauf: inAnlauf,
+        isVolltilgung: isLast && s > kfwAnlaufM && kfwAnlaufM > 0,
+      });
+    };
+
+    const splitPoints = new Set();
+    if (em !== null) {
+      if (freeM >= sm && freeM < em) splitPoints.add(freeM);
+      if (kfwAnlaufM > 0 && kfwAnlaufM >= sm && kfwAnlaufM < em) splitPoints.add(kfwAnlaufM);
+    } else {
+      if (kfwAnlaufM > 0 && kfwAnlaufM >= sm) splitPoints.add(kfwAnlaufM);
+    }
+    const cuts = [...splitPoints].sort((a,b) => a - b);
+
+    if (cuts.length === 0) {
+      push(sm, em, sm > freeM);
+    } else {
+      let cur = sm;
+      for (const cut of cuts) { push(cur, cut, cur > freeM); cur = cut + 1; }
+      push(cur, em, cur > freeM);
+    }
+  }
+  return phases;
+}
+
+// ── Chart ─────────────────────────────────────────────────────
+function chartColors() {
+  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
+  return {
+    tick:  dark ? '#888580' : '#888077',
+    grid:  dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
+  };
+}
+
+function renderChart(phases, p) {
+  const { tick, grid } = chartColors();
+  const h = Math.max(280, phases.length * 48 + 80);
+  document.getElementById('chart-wrap').style.height = h + 'px';
+  if (chart) chart.destroy();
+  chart = new Chart(document.getElementById('myChart'), {
+    type: 'bar',
+    data: {
+      labels: phases.map(ph => ph.label),
+      datasets: [
+        { label: 'Zinsen (Haupt)',        data: phases.map(ph => Math.round(ph.reg)),     backgroundColor: '#5a85c4', borderRadius: 3 },
+        { label: 'Bereitstellungszinsen', data: phases.map(ph => Math.round(ph.bi)),      backgroundColor: '#c46a5a', borderRadius: 3 },
+        { label: 'Tilgung (Haupt)',       data: phases.map(ph => Math.round(ph.tilg)),    backgroundColor: '#6aab90', borderRadius: 3 },
+        { label: 'Zinsen (KfW)',          data: phases.map(ph => Math.round(ph.kfwZins)), backgroundColor: '#9a7ec8', borderRadius: 3 },
+        { label: 'Tilgung (KfW)',         data: phases.map(ph => Math.round(ph.kfwTilg)),backgroundColor: '#b89de0', borderRadius: 3 },
+      ]
+    },
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw.toLocaleString('de-DE')} €` } }
+      },
+      scales: {
+        x: { stacked: true, ticks: { color: tick, font: { size: 11, family: 'DM Mono' }, callback: v => v.toLocaleString('de-DE') + ' €' }, grid: { color: grid } },
+        y: { stacked: true, ticks: { color: tick, font: { size: 12, family: 'DM Sans' } }, grid: { display: false } }
+      }
+    }
+  });
+}
+
+// ── Main calculate ────────────────────────────────────────────
+function calculate() {
+  const p = getParams();
+  const phases = buildPhases(p);
+
+  // Update tranche labels
+  TRANCHES_DEF.forEach((t, i) => {
+    const el = document.getElementById('pct-'+i);
+    if (el) {
+      const text = fmt(t.pct*100, 0) + ' % · ' + eur(t.pct * p.total);
+      el.textContent = text;
+      el.setAttribute('data-tooltip', text);
+    }
+  });
+  // Sync months inputs
+  months.forEach((m, i) => {
+    const el = document.getElementById('m'+i);
+    if (el && parseInt(el.value) !== m) el.value = m;
+  });
+
+  document.getElementById('gesamt-vol').textContent = eur(p.total + p.kfwTotal);
+
+  // KfW strip
+  const kfwMR = p.kfwZins / 12;
+  const kfwZinsOnly = p.kfwTotal * kfwMR;
+  const kfwAnnuität = p.kfwTotal * (kfwMR + kfwTilgRate / 12);
+  const kfwJahre = p.kfwTotal > 0 ? laufzeit(kfwTilgRate, p.kfwZins) : null;
+  document.getElementById('kfw-strip').innerHTML = p.kfwTotal > 0 ? `
+    <div class="kfw-info-item">
+      <div class="kfw-info-label">Zinsen Anlaufzeit</div>
+      <div class="kfw-info-val">${eur(kfwZinsOnly)}</div>
+    </div>
+    <div class="kfw-info-item">
+      <div class="kfw-info-label">Annuität ab Mo. ${p.kfwAnlauf * 12 + 1}</div>
+      <div class="kfw-info-val">${eur(kfwAnnuität)}</div>
+    </div>
+    <div class="kfw-info-item">
+      <div class="kfw-info-label">KfW-Laufzeit</div>
+      <div class="kfw-info-val">${kfwJahre ? kfwJahre + ' J.' : '–'}</div>
+    </div>` :
+    `<div style="color:var(--hint);font-size:11px;font-family:var(--font-mono);grid-column:1/-1;text-align:center">KfW-Betrag = 0</div>`;
+
+  const bauabnahmePhase   = phases.find(ph => ph.isLast) || phases[phases.length-1];
+  const volltilgungPhase  = phases.find(ph => ph.isVolltilgung) || bauabnahmePhase;
+  const hauptJahre = laufzeit(tilgRate, p.zinsJahr);
+  const bauzeitPhases = phases.filter(ph => !ph.isLast && !ph.isVolltilgung);
+  const maxBauzeit = bauzeitPhases.length > 0
+    ? Math.max(...bauzeitPhases.map(ph => ph.combined + p.miete))
+    : phases[0].combined + p.miete;
+
+  // Metrics
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric">
+      <div class="metric-label">Erste Gesamtrate</div>
+      <div class="metric-value">${eur(phases[0].combined)}</div>
+    </div>
+    <div class="metric" style="border-color:rgba(196,106,90,0.35)">
+      <div class="metric-label" style="color:#e0917f">Max. Belastung Bauzeit</div>
+      <div class="metric-value" style="color:#e0917f">${eur(maxBauzeit)}</div>
+      <div style="font-size:10px;color:var(--hint);margin-top:3px;font-family:var(--font-mono)">inkl. ${eur(p.miete)} Miete</div>
+    </div>
+    <div class="metric accent">
+      <div class="metric-label">Rate ab Bauabnahme</div>
+      <div class="metric-value">${eur(bauabnahmePhase.combined)}</div>
+    </div>
+    <div class="metric combined">
+      <div class="metric-label">Rate nach KfW-Anlaufzeit</div>
+      <div class="metric-value">${eur(volltilgungPhase.combined)}</div>
+    </div>
+    <div class="metric kfw">
+      <div class="metric-label">KfW-Annuität (nach Anlauf)</div>
+      <div class="metric-value">${p.kfwTotal > 0 ? eur(kfwAnnuität) : '–'}</div>
+    </div>
+    <div class="metric accent">
+      <div class="metric-label">Haupt schuldenfrei in ca.</div>
+      <div class="metric-value">${hauptJahre ? hauptJahre + ' Jahren' : '–'}</div>
+    </div>
+  `;
+
+  renderChart(phases, p);
+
+  // Table
+  const hasKfw = p.kfwTotal > 0;
+  let rows = `<thead>
+    <tr class="group-row">
+      <th colspan="4"></th>
+      <th colspan="3" class="g-main" style="text-align:center">— Hauptdarlehen —</th>
+      ${hasKfw ? `<th colspan="2" class="g-kfw" style="text-align:center">— KfW-Darlehen —</th>` : ''}
+      <th class="g-total" style="text-align:right">— Gesamt —</th>
+      ${p.miete > 0 ? `<th style="color:rgba(196,106,90,0.7);text-align:right">— Bauzeit —</th>` : ''}
+    </tr>
+    <tr>
+      <th style="text-align:left">Phase</th>
+      <th>Zeitraum</th>
+      <th>Ausgezahlt</th>
+      <th>Ausstehend</th>
+      <th>Zinsen</th>
+      <th>Bereitst.</th>
+      <th>Tilgung</th>
+      ${hasKfw ? `<th>KfW Zinsen</th><th>KfW Tilgung</th>` : ''}
+      <th>/ Monat</th>
+      ${p.miete > 0 ? `<th style="color:#e0917f">+ Miete</th>` : ''}
+    </tr>
+  </thead><tbody>`;
+
+  phases.forEach(ph => {
+    const zr = ph.em ? `Mo. ${ph.sm}–${ph.em}` : `ab Mo. ${ph.sm}`;
+    const biCell  = ph.bi > 0 ? `<span class="c-bereit">${eur(ph.bi)}</span>` : ph.zinsfreiPhase ? `<span class="zinsfrei">zinsfrei</span>` : '–';
+    const tilgCell= ph.tilg > 0 ? `<span class="c-tilg">${eur(ph.tilg)}</span>` : '–';
+    const kzCell  = hasKfw ? `<span class="c-kzins">${eur(ph.kfwZins)}</span>` : '';
+    const ktCell  = hasKfw ? (ph.kfwTilg > 0 ? `<span class="c-ktilg">${eur(ph.kfwTilg)}</span>` : `<span class="zinsfrei">tilgungsfrei</span>`) : '';
+    const rowClass = ph.isVolltilgung ? 'volltilgung-row' : ph.isLast ? 'last-row' : '';
+    const isBauzeit = !ph.isLast && !ph.isVolltilgung;
+    const mieteCell = p.miete > 0
+      ? isBauzeit
+        ? `<td style="color:#e0917f;font-weight:500">${eur(ph.combined + p.miete)}</td>`
+        : `<td style="color:var(--hint)">–</td>`
+      : '';
+
+    rows += `<tr class="${rowClass}">
+      <td>${ph.label}</td>
+      <td>${zr}</td>
+      <td>${eur(ph.dis)}</td>
+      <td>${ph.und > 0 ? eur(ph.und) : '–'}</td>
+      <td>${eur(ph.reg)}</td>
+      <td>${biCell}</td>
+      <td>${tilgCell}</td>
+      ${hasKfw ? `<td>${kzCell}</td><td>${ktCell}</td>` : ''}
+      <td class="c-total">${eur(ph.combined)}</td>
+      ${mieteCell}
+    </tr>`;
+  });
+  rows += '</tbody>';
+  document.getElementById('tbl').innerHTML = rows;
+}
+
+// ── Boot ──────────────────────────────────────────────────────
+loadState();
+calculate();
+</script>
+</body>
+</html>
