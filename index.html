@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de" data-theme="dark">
+<html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,21 +10,8 @@
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Themes ─────────────────────────────────────────────────── */
-[data-theme="dark"] {
-  --bg:       #0e0f11;
-  --surface:  #161719;
-  --surface2: #1d1f22;
-  --border:   rgba(255,255,255,0.07);
-  --border2:  rgba(255,255,255,0.13);
-  --text:     #f0ede8;
-  --muted:    #888580;
-  --hint:     #4a4845;
-  --shadow:   rgba(0,0,0,0.4);
-  --noise:    rgba(255,255,255,0.015);
-  --toggle-icon: '☀';
-}
-[data-theme="light"] {
+/* ── Theme (Light only) ─────────────────────────────────────── */
+:root {
   --bg:       #f2f0eb;
   --surface:  #ffffff;
   --surface2: #f7f5f1;
@@ -35,11 +22,6 @@
   --hint:     #b0ada8;
   --shadow:   rgba(0,0,0,0.06);
   --noise:    rgba(0,0,0,0.012);
-  --toggle-icon: '☾';
-}
-
-/* ── Shared semantic colors ──────────────────────────────────── */
-:root {
   --accent:       #c8a96e;
   --red:          #c46a5a;
   --blue:         #5a85c4;
@@ -60,7 +42,6 @@ body {
   font-family: var(--font-sans);
   min-height: 100vh;
   overflow-x: hidden;
-  transition: background 0.25s, color 0.25s;
 }
 body::before {
   content: '';
@@ -81,7 +62,7 @@ header {
   display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;
 }
 .header-left {}
-.header-right { display: flex; flex-direction: column; align-items: flex-end; gap: 16px; }
+.header-right { display: flex; flex-direction: column; align-items: flex-end; }
 
 .header-label { font-family: var(--font-mono); font-size: 11px; color: var(--accent); letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 10px; }
 h1 { font-family: var(--font-serif); font-size: clamp(24px, 4vw, 38px); font-weight: 400; line-height: 1.15; color: var(--text); margin-bottom: 6px; }
@@ -91,22 +72,34 @@ h1 { font-family: var(--font-serif); font-size: clamp(24px, 4vw, 38px); font-wei
 .gesamtvolumen-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
 .gesamtvolumen-value { font-family: var(--font-serif); font-size: 26px; color: var(--accent); }
 
-/* Theme toggle */
-.theme-toggle {
+.tab-switch {
+  display: inline-flex;
+  gap: 6px;
+  margin-bottom: 18px;
   background: var(--surface2);
   border: 1px solid var(--border2);
-  border-radius: 20px;
-  padding: 6px 14px;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  color: var(--muted);
-  display: flex; align-items: center; gap: 7px;
-  transition: border-color 0.15s, color 0.15s;
-  white-space: nowrap;
+  border-radius: 999px;
+  padding: 4px;
 }
-.theme-toggle:hover { border-color: var(--accent); color: var(--text); }
-.theme-toggle .icon { font-size: 14px; }
+.tab-btn {
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.tab-btn.active {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
 
 .grid-layout { display: grid; grid-template-columns: 280px minmax(0,1fr); gap: 20px; align-items: start; }
 @media (max-width: 780px) { .grid-layout { grid-template-columns: 1fr; } }
@@ -122,7 +115,6 @@ h1 { font-family: var(--font-serif); font-size: clamp(24px, 4vw, 38px); font-wei
   padding: 18px;
   transition: background 0.25s, border-color 0.25s;
 }
-.card.kfw-card { border-color: rgba(154,126,200,0.3); }
 .card.miete-card { border-color: rgba(196,106,90,0.25); }
 .badge-miete { background: rgba(196,106,90,0.12); color: #e0917f; font-size: 9px; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.07em; font-family: var(--font-mono); }
 .miete-hint { font-size: 11px; color: var(--hint); font-family: var(--font-mono); line-height: 1.5; margin-top: 2px; }
@@ -132,11 +124,6 @@ h1 { font-family: var(--font-serif); font-size: clamp(24px, 4vw, 38px); font-wei
   text-transform: uppercase; color: var(--muted); margin-bottom: 16px;
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
 }
-.badge {
-  background: rgba(154,126,200,0.15); color: var(--purple-light);
-  font-size: 9px; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.07em;
-}
-
 /* ── Form elements ───────────────────────────────────────────── */
 .field { margin-bottom: 14px; }
 .field:last-child { margin-bottom: 0; }
@@ -168,7 +155,19 @@ input[type="number"] {
 }
 input[type="number"]::-webkit-inner-spin-button { display: none; }
 input[type="number"]:focus { border-color: var(--accent); }
-.kfw-card input[type="number"]:focus { border-color: var(--purple); }
+input[type="date"] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  padding: 8px 11px;
+  outline: none;
+  transition: border-color 0.15s, background 0.25s;
+}
+input[type="date"]:focus { border-color: var(--accent); }
 
 /* Two-column field row — equal, no overflow */
 .field-row {
@@ -178,6 +177,8 @@ input[type="number"]:focus { border-color: var(--accent); }
   margin-bottom: 14px;
 }
 .field-row .field { margin-bottom: 0; }
+.field-row.date-row { grid-template-columns: 1fr; }
+.date-label { white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.3; }
 
 /* Slider */
 .slider-row { display: flex; align-items: center; gap: 10px; margin-top: 4px; }
@@ -194,31 +195,52 @@ input[type="range"]::-moz-range-thumb {
   width: 16px; height: 16px;
   border-radius: 50%; background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
 }
-.kfw-card input[type="range"]::-webkit-slider-thumb { background: var(--purple); }
-.kfw-card input[type="range"]::-moz-range-thumb { background: var(--purple); }
 .slider-val { font-family: var(--font-mono); font-size: 15px; font-weight: 500; color: var(--accent); min-width: 48px; text-align: right; white-space: nowrap; }
-.slider-val.purple { color: var(--purple-light); }
 
 /* Tranche rows */
 .tranche-row {
-  display: flex; align-items: center; gap: 8px;
+  display: block;
   padding: 8px 0; border-bottom: 1px solid var(--border);
 }
 .tranche-row:last-child { border-bottom: none; }
-.tranche-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-.tranche-label { font-size: 12px; color: var(--text); white-space: nowrap; flex-shrink: 0; }
-.tranche-pct { font-family: var(--font-mono); font-size: 10px; color: var(--muted); flex: 1; text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 4px; min-width: 0; position: relative; cursor: default; }
-.tranche-pct::after {
-  content: attr(data-tooltip);
-  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-  background: var(--surface2); border: 1px solid var(--border2);
-  color: var(--text); font-size: 11px; padding: 4px 9px;
-  border-radius: 6px; white-space: nowrap; pointer-events: none;
-  opacity: 0; transition: opacity 0.15s;
-  z-index: 10; box-shadow: 0 4px 12px var(--shadow);
+.tranche-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  min-width: 0;
 }
-.tranche-pct:hover::after { opacity: 1; }
-.tranche-month { width: 50px; flex-shrink: 0; }
+.tranche-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.tranche-label { font-size: 12px; color: var(--text); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tranche-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 92px 50px;
+  gap: 8px;
+  align-items: center;
+}
+.tranche-pct { min-width: 0; }
+.tranche-pct-input {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: 6px; color: var(--text); font-family: var(--font-mono);
+  font-size: 12px; padding: 5px 18px 5px 6px; outline: none; text-align: right;
+  transition: border-color 0.15s; -moz-appearance: textfield;
+}
+.tranche-pct-input::-webkit-inner-spin-button { display: none; }
+.tranche-pct-input:focus { border-color: var(--accent); }
+.tranche-pct-wrap { position: relative; }
+.tranche-pct-suffix {
+  position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+  font-family: var(--font-mono); font-size: 10px; color: var(--hint); pointer-events: none;
+}
+.tranche-eur {
+  width: 100%;
+  text-align: right;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.tranche-month { width: 100%; }
 .tranche-month input {
   width: 100%; background: var(--surface2); border: 1px solid var(--border2);
   border-radius: 6px; color: var(--text); font-family: var(--font-mono);
@@ -227,9 +249,32 @@ input[type="range"]::-moz-range-thumb {
 }
 .tranche-month input::-webkit-inner-spin-button { display: none; }
 .tranche-month input:focus { border-color: var(--accent); }
+.tranche-summary {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.tranche-summary-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+.tranche-summary-value {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text);
+}
+.tranche-summary-value.ok { color: var(--green); }
+.tranche-summary-value.warn { color: var(--red); }
 
 /* ── Metrics ─────────────────────────────────────────────────── */
-.metrics { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 12px; }
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
 @media (max-width: 560px) { .metrics { grid-template-columns: repeat(2, minmax(0,1fr)); } }
 
 .metric {
@@ -241,8 +286,6 @@ input[type="range"]::-moz-range-thumb {
 .metric-value { font-family: var(--font-serif); font-size: clamp(15px, 1.8vw, 21px); color: var(--text); }
 .metric.accent { border-color: rgba(200,169,110,0.3); }
 .metric.accent .metric-value { color: var(--accent); }
-.metric.kfw { border-color: rgba(154,126,200,0.25); }
-.metric.kfw .metric-value { color: var(--purple-light); }
 .metric.combined { border-color: rgba(106,171,144,0.3); }
 .metric.combined .metric-value { color: var(--green); }
 
@@ -252,16 +295,8 @@ input[type="range"]::-moz-range-thumb {
 .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--muted); }
 .legend-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
 #chart-wrap { position: relative; width: 100%; }
-
-/* ── KfW info strip ──────────────────────────────────────────── */
-.kfw-info-strip {
-  background: rgba(154,126,200,0.06); border: 1px solid rgba(154,126,200,0.18);
-  border-radius: var(--radius); padding: 12px 14px;
-  display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 8px; margin-top: 14px;
-}
-.kfw-info-item { text-align: center; }
-.kfw-info-label { font-size: 9px; color: var(--muted); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; line-height: 1.3; }
-.kfw-info-val { font-family: var(--font-serif); font-size: 17px; color: var(--purple-light); }
+#timeline-wrap { position: relative; width: 100%; min-height: 320px; }
+#balance-wrap { position: relative; width: 100%; min-height: 300px; }
 
 /* ── Table ───────────────────────────────────────────────────── */
 .tbl-wrap { overflow-x: auto; }
@@ -274,7 +309,6 @@ thead th {
 thead th:first-child { text-align: left; }
 thead .group-row th { border-bottom: none; border-top: 1px solid var(--border); padding: 8px 10px 3px; color: var(--hint); font-size: 9px; }
 thead .group-row th.g-main  { color: rgba(90,133,196,0.7); }
-thead .group-row th.g-kfw   { color: rgba(154,126,200,0.7); }
 thead .group-row th.g-total { color: rgba(106,171,144,0.7); }
 
 tbody td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--border); font-family: var(--font-mono); color: var(--text); white-space: nowrap; font-size: 12px; }
@@ -286,11 +320,93 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
 .zinsfrei { color: var(--hint); font-style: italic; }
 .c-bereit { color: var(--red); }
 .c-tilg   { color: var(--green); }
-.c-kzins  { color: var(--purple-light); }
-.c-ktilg  { color: var(--purple); }
 .c-total  { color: var(--green); font-weight: 500; }
 
 .footnote { font-size: 11px; color: var(--hint); margin-top: 12px; line-height: 1.7; font-family: var(--font-mono); }
+.btn-small {
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.sonder-list { display: flex; flex-direction: column; gap: 10px; }
+.sonder-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+.sonder-row .field { margin-bottom: 0; }
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .wrapper { padding: 24px 12px 56px; }
+  header {
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .header-right { align-items: flex-start; width: 100%; }
+  .gesamtvolumen { text-align: left; }
+  .gesamtvolumen-value { font-size: 22px; }
+  .grid-layout { gap: 14px; }
+  .main { gap: 14px; }
+  .card, .chart-card { padding: 14px; border-radius: 12px; }
+  .tab-switch { width: 100%; }
+  .tab-btn { flex: 1; text-align: center; }
+}
+
+@media (max-width: 640px) {
+  h1 { font-size: clamp(22px, 7vw, 28px); }
+  .header-sub { font-size: 12px; line-height: 1.35; }
+  .field-row { grid-template-columns: 1fr; }
+  .slider-val { min-width: 44px; font-size: 14px; }
+  .tranche-controls {
+    grid-template-columns: minmax(0, 1fr) 68px;
+    grid-template-areas:
+      "pct month"
+      "eur eur";
+    row-gap: 6px;
+  }
+  .tranche-pct { grid-area: pct; }
+  .tranche-month { grid-area: month; }
+  .tranche-eur {
+    grid-area: eur;
+    text-align: left;
+    font-size: 10px;
+  }
+  .tranche-summary-label { font-size: 9px; }
+  .tranche-summary-value { font-size: 11px; }
+  .metrics { grid-template-columns: 1fr; }
+  .legend { gap: 8px 10px; margin-bottom: 12px; }
+  .legend-item { font-size: 10px; }
+  #chart-wrap { min-height: 280px; }
+  #timeline-wrap { min-height: 260px; }
+  #balance-wrap { min-height: 240px; }
+  .tbl-wrap { -webkit-overflow-scrolling: touch; }
+  table { min-width: 760px; font-size: 11px; }
+  thead th { font-size: 8px; padding: 6px 8px; }
+  tbody td { font-size: 11px; padding: 7px 8px; }
+  .footnote { font-size: 10px; line-height: 1.5; }
+  .sonder-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
+
+@media (max-width: 420px) {
+  .wrapper { padding: 16px 8px 40px; }
+  .card, .chart-card { padding: 12px; }
+  .header-label { font-size: 10px; }
+  .gesamtvolumen-value { font-size: 20px; }
+  input[type="number"], input[type="date"] { font-size: 13px; }
+}
 </style>
 </head>
 <body>
@@ -300,25 +416,65 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
     <div class="header-left">
       <div class="header-label">Finanzierungsplanung</div>
       <h1>Immobilienkredit-<br>Rechner</h1>
-      <p class="header-sub">Hauptdarlehen + KfW · Tranchenweise Auszahlung · Tilgungsphase</p>
+      <p class="header-sub">Darlehen · Tranchenweise Auszahlung · Tilgungsphase</p>
     </div>
     <div class="header-right">
-      <button class="theme-toggle" onclick="toggleTheme()" id="themeBtn">
-        <span class="icon">☀</span><span id="themeLabel">Tagmodus</span>
-      </button>
       <div class="gesamtvolumen">
-        <div class="gesamtvolumen-label">Gesamtfinanzierung</div>
+        <div class="gesamtvolumen-label">Finanzierung</div>
         <div class="gesamtvolumen-value" id="gesamt-vol">–</div>
       </div>
     </div>
   </header>
 
+  <div class="tab-switch">
+    <button class="tab-btn active" data-tab="dashboard" type="button">Dashboard</button>
+    <button class="tab-btn" data-tab="verlauf" type="button">Verlauf</button>
+    <button class="tab-btn" data-tab="config" type="button">Konfiguration</button>
+    <button class="tab-btn" data-tab="sondertilgung" type="button">Sondertilgungen</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-dashboard">
+    <div class="main">
+      <div class="metrics" id="metrics"></div>
+
+      <div class="chart-card">
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#5a85c4"></div>Zinsen</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#c46a5a"></div>Bereitstellungszinsen</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#6aab90"></div>Tilgung</div>
+        </div>
+        <div id="chart-wrap"><canvas id="myChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-verlauf">
+    <div class="main">
+      <div class="chart-card">
+        <div class="card-title">Zinsbindung: Monatsrate im Verlauf</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#5a85c4"></div>Zinsanteil der Monatsrate</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#6aab90"></div>Tilgungsanteil der Monatsrate</div>
+        </div>
+        <div id="timeline-wrap"><canvas id="timelineChart"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="card-title">Zinsbindung: Restschuldverlauf</div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#c46a5a"></div>Restschuld je Monat</div>
+        </div>
+        <div id="balance-wrap"><canvas id="balanceChart"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-panel" id="tab-config">
   <div class="grid-layout">
     <div class="sidebar">
 
-      <!-- Hauptdarlehen -->
+      <!-- Darlehen -->
       <div class="card">
-        <div class="card-title">Hauptdarlehen</div>
+        <div class="card-title">Darlehen</div>
         <div class="field">
           <label>Kreditbetrag</label>
           <div class="input-wrap"><input type="number" id="total" value="450000" min="10000" max="5000000" step="1000"><span class="input-suffix">€</span></div>
@@ -337,6 +493,24 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
           <label>Bereitstellungszinsfreie Zeit</label>
           <div class="input-wrap"><input type="number" id="freeMonate" value="12" min="0" max="36" step="1"><span class="input-suffix">Mo.</span></div>
         </div>
+        <div class="field-row date-row">
+          <div class="field">
+            <label class="date-label">Baubeginn</label>
+            <input type="date" id="baubeginn" value="2026-01-01">
+          </div>
+          <div class="field">
+            <label class="date-label">Auszahlungsbeginn (Gesamtkredit)</label>
+            <input type="date" id="auszahlungsdatum" value="2026-01-01">
+          </div>
+          <div class="field">
+            <label class="date-label">Tilgungsbeginn (Gesamtkredit)</label>
+            <input type="date" id="tilgungsbeginn" value="2027-12-01">
+          </div>
+          <div class="field">
+            <label class="date-label">Zinsbindung</label>
+            <div class="input-wrap"><input type="number" id="zinsbindungJahre" value="10" min="1" max="40" step="0.5"><span class="input-suffix">J.</span></div>
+          </div>
+        </div>
         <div class="field">
           <label>Tilgungssatz p.a. (ab Bauabnahme)</label>
           <div class="slider-row">
@@ -346,38 +520,11 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
         </div>
       </div>
 
-      <!-- KfW -->
-      <div class="card kfw-card">
-        <div class="card-title">KfW-Darlehen <span class="badge">Förderkredit</span></div>
-        <div class="field">
-          <label>KfW-Betrag</label>
-          <div class="input-wrap"><input type="number" id="kfw-total" value="100000" min="0" max="2000000" step="1000"><span class="input-suffix">€</span></div>
-        </div>
-        <div class="field-row">
-          <div class="field">
-            <label>Zinssatz p.a.</label>
-            <div class="input-wrap"><input type="number" id="kfw-zins" value="2.50" min="0.1" max="15" step="0.05"><span class="input-suffix">%</span></div>
-          </div>
-          <div class="field">
-            <label>Tilgungsfreie Anlaufzeit</label>
-            <div class="input-wrap"><input type="number" id="kfw-anlauf" value="2" min="0" max="10" step="1"><span class="input-suffix">J.</span></div>
-          </div>
-        </div>
-        <div class="field">
-          <label>Tilgungssatz p.a. (nach Anlaufzeit)</label>
-          <div class="slider-row">
-            <input type="range" id="kfw-tilgSlider" min="0.5" max="8" step="0.1" value="3">
-            <div class="slider-val purple" id="kfw-tilgVal">3,0 %</div>
-          </div>
-        </div>
-        <div class="kfw-info-strip" id="kfw-strip"></div>
-      </div>
-
       <!-- Miete -->
       <div class="card miete-card">
-        <div class="card-title">Aktuelle Miete <span class="badge-miete">Bauzeit</span></div>
+        <div class="card-title">Miete <span class="badge-miete">Bauzeit</span></div>
         <div class="field" style="margin-bottom:8px">
-          <label>Monatliche Kaltmiete</label>
+          <label>Miete</label>
           <div class="input-wrap"><input type="number" id="miete" value="1200" min="0" max="10000" step="50"><span class="input-suffix">€</span></div>
         </div>
         <div class="miete-hint">Wird zur Kreditrate addiert, solange die Bauabnahme noch aussteht.</div>
@@ -385,34 +532,36 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
 
       <!-- Tranchen -->
       <div class="card">
-        <div class="card-title">Auszahlungstranchen (Hauptdarlehen)</div>
+        <div class="card-title">Auszahlungstranchen (Darlehen)</div>
         <div id="tranchen-list"></div>
+        <div class="tranche-summary">
+          <div class="tranche-summary-label">Summe Tranchen</div>
+          <div class="tranche-summary-value" id="tranche-total-pct">100,0 %</div>
+        </div>
       </div>
 
     </div><!-- /sidebar -->
-
     <div class="main">
-      <div class="metrics" id="metrics"></div>
-
-      <div class="chart-card">
-        <div class="legend">
-          <div class="legend-item"><div class="legend-dot" style="background:#5a85c4"></div>Zinsen (Haupt)</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#c46a5a"></div>Bereitstellungszinsen</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#6aab90"></div>Tilgung (Haupt)</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#9a7ec8"></div>Zinsen (KfW)</div>
-          <div class="legend-item"><div class="legend-dot" style="background:#b89de0"></div>Tilgung (KfW)</div>
-        </div>
-        <div id="chart-wrap"><canvas id="myChart"></canvas></div>
-      </div>
-
       <div class="card">
         <div class="card-title">Detailübersicht</div>
         <div class="tbl-wrap"><table id="tbl"></table></div>
         <div class="footnote">
-          Bereitstellungszinsen auf nicht abgerufenen Hauptdarlehensbetrag &nbsp;·&nbsp;
-          Haupttilgung ab Bauabnahme &nbsp;·&nbsp;
-          KfW-Zinsen laufen ab Monat 1 auf den vollen KfW-Betrag &nbsp;·&nbsp;
-          KfW-Tilgung beginnt nach Ablauf der tilgungsfreien Anlaufzeit
+          Bereitstellungszinsen auf nicht abgerufenen Darlehensbetrag &nbsp;·&nbsp;
+          Tilgung ab Bauabnahme
+        </div>
+      </div>
+    </div>
+  </div>
+  </div>
+
+  <div class="tab-panel" id="tab-sondertilgung">
+    <div class="main">
+      <div class="card">
+        <div class="card-title">Sondertilgungen</div>
+        <div class="sonder-list" id="sondertilgung-list"></div>
+        <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">
+          <button class="btn-small" id="add-sondertilgung" type="button">+ Sondertilgung hinzufügen</button>
+          <div class="miete-hint" id="sondertilgung-summary">Keine Sondertilgungen erfasst.</div>
         </div>
       </div>
     </div>
@@ -421,61 +570,61 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
 
 <script>
 // ── Storage key ───────────────────────────────────────────────
-const STORE_KEY = 'immorechner_v1';
+const STORE_KEY = 'immorechner_v2';
 
 // ── Constants ─────────────────────────────────────────────────
 const TRANCHES_DEF = [
-  { label: 'Bauantrag',      pct: 0.05 },
-  { label: 'Bodenplatte',    pct: 0.15 },
-  { label: 'Dacheindeckung', pct: 0.45 },
-  { label: 'Installation',   pct: 0.10 },
-  { label: 'Estrich',        pct: 0.10 },
-  { label: 'Fließen',        pct: 0.05 },
-  { label: 'Bauabnahme',     pct: 0.10 },
+  { label: 'Bauantrag' },
+  { label: 'Bodenplatte' },
+  { label: 'Dacheindeckung' },
+  { label: 'Installation' },
+  { label: 'Estrich' },
+  { label: 'Fließen' },
+  { label: 'Bauabnahme' },
 ];
+const DEFAULT_TRANCHE_PCTS = [5, 15, 45, 10, 10, 5, 10];
 const DEFAULT_MONTHS = [1, 3, 9, 14, 17, 20, 23];
 const DEFAULT_INPUTS = {
-  total: 450000, zins: 3.75, bereit: 0.25, freeMonate: 12,
-  'kfw-total': 100000, 'kfw-zins': 2.50, 'kfw-anlauf': 2,
-  tilgSlider: 2, 'kfw-tilgSlider': 3,
+  total: 450000,
+  zins: 3.75,
+  bereit: 0.25,
+  freeMonate: 12,
+  baubeginn: '2026-01-01',
+  auszahlungsdatum: '2026-01-01',
+  tilgungsbeginn: '2027-12-01',
+  zinsbindungJahre: 10,
+  tilgSlider: 2,
   miete: 1200,
 };
 
-let months    = [...DEFAULT_MONTHS];
-let tilgRate  = 0.02;
-let kfwTilgRate = 0.03;
-let chart     = null;
+let months = [...DEFAULT_MONTHS];
+let tranchePcts = [...DEFAULT_TRANCHE_PCTS];
+let sondertilgungen = [];
+let tilgRate = 0.02;
+let chart = null;
+let timelineChart = null;
+let balanceChart = null;
+let activeTab = 'dashboard';
 
-// ── Theme ─────────────────────────────────────────────────────
-function applyTheme(t) {
-  document.documentElement.setAttribute('data-theme', t);
-  const btn = document.getElementById('themeBtn');
-  const lbl = document.getElementById('themeLabel');
-  if (t === 'light') { btn.querySelector('.icon').textContent = '☾'; lbl.textContent = 'Nachtmodus'; }
-  else               { btn.querySelector('.icon').textContent = '☀'; lbl.textContent = 'Tagmodus'; }
-}
-function toggleTheme() {
-  const cur = document.documentElement.getAttribute('data-theme');
-  const next = cur === 'dark' ? 'light' : 'dark';
-  applyTheme(next);
-  saveState();
-  if (chart) { chart.destroy(); chart = null; renderChart(buildPhases(getParams()), getParams()); }
+function setActiveTab(tab, persist = true) {
+  activeTab = ['dashboard', 'verlauf', 'config', 'sondertilgung'].includes(tab) ? tab : 'dashboard';
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.getAttribute('data-tab') === activeTab);
+  });
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.toggle('active', panel.id === 'tab-' + activeTab);
+  });
+  if (persist) saveState();
 }
 
 // ── Persistence ───────────────────────────────────────────────
 function saveState() {
-  const state = {
-    theme: document.documentElement.getAttribute('data-theme'),
-    months,
-    tilgRate,
-    kfwTilgRate,
-    inputs: {},
-  };
+  const state = { months, tranchePcts, sondertilgungen, tilgRate, activeTab, inputs: {} };
   Object.keys(DEFAULT_INPUTS).forEach(id => {
     const el = document.getElementById(id);
     if (el) state.inputs[id] = el.value;
   });
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch(e) {}
+  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
 }
 
 function loadState() {
@@ -483,22 +632,31 @@ function loadState() {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return;
     const s = JSON.parse(raw);
-    if (s.theme) applyTheme(s.theme);
-    if (s.months && s.months.length === DEFAULT_MONTHS.length) months = s.months;
-    if (s.tilgRate)    tilgRate    = s.tilgRate;
-    if (s.kfwTilgRate) kfwTilgRate = s.kfwTilgRate;
+    if (s.months && s.months.length === DEFAULT_MONTHS.length) months = s.months.map(v => parseInt(v, 10) || 1);
+    if (s.tranchePcts && s.tranchePcts.length === DEFAULT_TRANCHE_PCTS.length) {
+      tranchePcts = s.tranchePcts.map(v => Math.max(0, Math.min(100, parseFloat(v) || 0)));
+      normalizeTranchePcts();
+    }
+    if (Array.isArray(s.sondertilgungen)) {
+      sondertilgungen = s.sondertilgungen
+        .map(entry => ({
+          date: typeof entry.date === 'string' ? entry.date : '',
+          amount: Math.max(0, parseFloat(entry.amount) || 0),
+        }))
+        .filter(entry => entry.date || entry.amount > 0);
+    }
+    if (s.tilgRate) tilgRate = s.tilgRate;
+    if (s.activeTab) activeTab = s.activeTab;
     if (s.inputs) {
       Object.entries(s.inputs).forEach(([id, val]) => {
         const el = document.getElementById(id);
         if (el) el.value = val;
       });
     }
-    // Sync slider display values
-    document.getElementById('tilgVal').textContent     = fmt(parseFloat(document.getElementById('tilgSlider').value), 1) + ' %';
-    document.getElementById('kfw-tilgVal').textContent = fmt(parseFloat(document.getElementById('kfw-tilgSlider').value), 1) + ' %';
-    tilgRate    = parseFloat(document.getElementById('tilgSlider').value) / 100;
-    kfwTilgRate = parseFloat(document.getElementById('kfw-tilgSlider').value) / 100;
-  } catch(e) {}
+    document.getElementById('tilgVal').textContent = fmt(parseFloat(document.getElementById('tilgSlider').value), 1) + ' %';
+    tilgRate = parseFloat(document.getElementById('tilgSlider').value) / 100;
+    renderSondertilgungen();
+  } catch (e) {}
 }
 
 // ── Tranche inputs ────────────────────────────────────────────
@@ -507,15 +665,36 @@ TRANCHES_DEF.forEach((t, i) => {
   const row = document.createElement('div');
   row.className = 'tranche-row';
   row.innerHTML = `
-    <div class="tranche-dot"></div>
-    <div class="tranche-label">${t.label}</div>
-    <div class="tranche-pct" id="pct-${i}">${fmt(t.pct*100,0)} %</div>
-    <div class="tranche-month"><input type="number" id="m${i}" value="${DEFAULT_MONTHS[i]}" min="1" max="360"></div>
+    <div class="tranche-head">
+      <div class="tranche-dot"></div>
+      <div class="tranche-label">${t.label}</div>
+    </div>
+    <div class="tranche-controls">
+      <div class="tranche-pct">
+        <div class="tranche-pct-wrap">
+          <input type="number" class="tranche-pct-input" id="pct-${i}" value="${toInputNumber(tranchePcts[i], 1)}" min="0" max="100" step="0.1">
+          <span class="tranche-pct-suffix">%</span>
+        </div>
+      </div>
+      <div class="tranche-eur" id="eur-${i}">–</div>
+      <div class="tranche-month"><input type="number" id="m${i}" value="${DEFAULT_MONTHS[i]}" min="1" max="360"></div>
+    </div>
   `;
   list.appendChild(row);
-  row.querySelector('input').addEventListener('change', e => {
-    months[i] = Math.max(1, parseInt(e.target.value) || DEFAULT_MONTHS[i]);
-    enforce(); saveState(); calculate();
+
+  row.querySelector('#m' + i).addEventListener('change', e => {
+    months[i] = Math.max(1, parseInt(e.target.value, 10) || DEFAULT_MONTHS[i]);
+    enforceMonths();
+    saveState();
+    calculate();
+  });
+
+  row.querySelector('#pct-' + i).addEventListener('input', e => {
+    const value = Math.max(0, Math.min(100, parsePctInput(e.target.value)));
+    tranchePcts[i] = value;
+    normalizeTranchePcts(i);
+    saveState();
+    calculate();
   });
 });
 
@@ -523,42 +702,146 @@ TRANCHES_DEF.forEach((t, i) => {
 Object.keys(DEFAULT_INPUTS).forEach(id => {
   const el = document.getElementById(id);
   if (!el) return;
-  el.addEventListener('input', () => { saveState(); calculate(); });
+  el.addEventListener('input', () => {
+    saveState();
+    calculate();
+  });
 });
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const next = btn.getAttribute('data-tab');
+    if (next === activeTab) return;
+    setActiveTab(next);
+    calculate();
+  });
+});
+
+const sonderList = document.getElementById('sondertilgung-list');
+if (sonderList) {
+  sonderList.addEventListener('input', e => {
+    const target = e.target;
+    const idx = parseInt(target.getAttribute('data-index'), 10);
+    const field = target.getAttribute('data-sonder-field');
+    if (Number.isNaN(idx) || !sondertilgungen[idx]) return;
+    if (field === 'date') sondertilgungen[idx].date = target.value;
+    if (field === 'amount') sondertilgungen[idx].amount = Math.max(0, parseFloat(target.value) || 0);
+    saveState();
+    // Keep focus stable while typing: avoid re-render on each keystroke.
+    const total = sondertilgungen.reduce((sum, item) => sum + (Math.max(0, parseFloat(item.amount) || 0)), 0);
+    const summary = document.getElementById('sondertilgung-summary');
+    if (summary) summary.textContent = total > 0 ? `Geplante Sondertilgung gesamt: ${eur(total)}` : 'Keine Sondertilgungen erfasst.';
+    calculate();
+  });
+
+  sonderList.addEventListener('click', e => {
+    const target = e.target;
+    const del = target.getAttribute('data-sonder-delete');
+    if (del === null) return;
+    const idx = parseInt(del, 10);
+    if (Number.isNaN(idx)) return;
+    sondertilgungen.splice(idx, 1);
+    saveState();
+    renderSondertilgungen();
+    calculate();
+  });
+}
+
+const addSonderBtn = document.getElementById('add-sondertilgung');
+if (addSonderBtn) {
+  addSonderBtn.addEventListener('click', () => {
+    sondertilgungen.push({ date: sondertilgungDateDefault(), amount: 0 });
+    saveState();
+    renderSondertilgungen();
+  });
+}
 
 document.getElementById('tilgSlider').addEventListener('input', e => {
   tilgRate = parseFloat(e.target.value) / 100;
   document.getElementById('tilgVal').textContent = fmt(parseFloat(e.target.value), 1) + ' %';
-  saveState(); calculate();
-});
-document.getElementById('kfw-tilgSlider').addEventListener('input', e => {
-  kfwTilgRate = parseFloat(e.target.value) / 100;
-  document.getElementById('kfw-tilgVal').textContent = fmt(parseFloat(e.target.value), 1) + ' %';
-  saveState(); calculate();
+  saveState();
+  calculate();
 });
 
 // ── Helpers ───────────────────────────────────────────────────
 function eur(v) { return v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }); }
-function fmt(v, dec=1) { return v.toLocaleString('de-DE', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+function fmt(v, dec = 1) { return v.toLocaleString('de-DE', { minimumFractionDigits: dec, maximumFractionDigits: dec }); }
+function toInputNumber(v, dec = 1) { return Number(v).toFixed(dec); }
+function parsePctInput(value) {
+  const normalized = String(value ?? '').replace(',', '.');
+  return parseFloat(normalized) || 0;
+}
 
 function getParams() {
   return {
-    total:     parseFloat(document.getElementById('total').value)     || 450000,
-    zinsJahr:  parseFloat(document.getElementById('zins').value)      / 100 || 0.0375,
-    bereitM:   parseFloat(document.getElementById('bereit').value)    / 100 || 0.0025,
-    freeM:     parseInt(document.getElementById('freeMonate').value)  || 12,
-    kfwTotal:  parseFloat(document.getElementById('kfw-total').value) || 0,
-    kfwZins:   parseFloat(document.getElementById('kfw-zins').value)  / 100 || 0.025,
-    kfwAnlauf: parseInt(document.getElementById('kfw-anlauf').value)  || 0,
-    miete:     parseFloat(document.getElementById('miete').value)     || 0,
+    total: parseFloat(document.getElementById('total').value) || 450000,
+    zinsJahr: parseFloat(document.getElementById('zins').value) / 100 || 0.0375,
+    bereitM: parseFloat(document.getElementById('bereit').value) / 100 || 0.0025,
+    freeM: parseInt(document.getElementById('freeMonate').value, 10) || 12,
+    baubeginn: document.getElementById('baubeginn').value || '2026-01-01',
+    auszahlungsdatum: document.getElementById('auszahlungsdatum').value || '2026-01-01',
+    tilgungsbeginn: document.getElementById('tilgungsbeginn').value || '',
+    zinsbindungJahre: parseFloat(document.getElementById('zinsbindungJahre').value) || 10,
+    miete: parseFloat(document.getElementById('miete').value) || 0,
   };
 }
 
-function enforce() {
+function sondertilgungDateDefault() {
+  return document.getElementById('tilgungsbeginn').value || document.getElementById('auszahlungsdatum').value || '';
+}
+
+function sondertilgungSumUntil(dateLimit) {
+  if (!dateLimit) return 0;
+  return sondertilgungen.reduce((sum, item) => {
+    const d = parseIsoDate(item.date);
+    if (!d || d > dateLimit) return sum;
+    return sum + Math.max(0, parseFloat(item.amount) || 0);
+  }, 0);
+}
+
+function renderSondertilgungen() {
+  const container = document.getElementById('sondertilgung-list');
+  if (!container) return;
+
+  if (sondertilgungen.length === 0) {
+    container.innerHTML = `<div class="miete-hint">Noch keine Sondertilgung hinterlegt.</div>`;
+  } else {
+    container.innerHTML = sondertilgungen.map((entry, i) => `
+      <div class="sonder-row">
+        <div class="field">
+          <label>Datum</label>
+          <input type="date" data-sonder-field="date" data-index="${i}" value="${entry.date || ''}">
+        </div>
+        <div class="field">
+          <label>Betrag</label>
+          <div class="input-wrap">
+            <input type="number" data-sonder-field="amount" data-index="${i}" value="${entry.amount || ''}" min="0" step="1000">
+            <span class="input-suffix">€</span>
+          </div>
+        </div>
+        <button class="btn-small" type="button" data-sonder-delete="${i}">Entfernen</button>
+      </div>
+    `).join('');
+  }
+
+  const total = sondertilgungen.reduce((sum, item) => sum + (Math.max(0, parseFloat(item.amount) || 0)), 0);
+  const summary = document.getElementById('sondertilgung-summary');
+  if (summary) summary.textContent = total > 0 ? `Geplante Sondertilgung gesamt: ${eur(total)}` : 'Keine Sondertilgungen erfasst.';
+}
+
+function normalizeTranchePcts(changedIndex = null) {
+  const lastIndex = tranchePcts.length - 1;
+  const fallbackIndex = lastIndex - 1;
+  const autoAdjustIndex = changedIndex === lastIndex ? fallbackIndex : lastIndex;
+  const sumWithoutAuto = tranchePcts.reduce((sum, val, idx) => idx === autoAdjustIndex ? sum : sum + val, 0);
+  tranchePcts[autoAdjustIndex] = Math.max(0, 100 - sumWithoutAuto);
+}
+
+function enforceMonths() {
   for (let i = 1; i < months.length; i++) {
-    if (months[i] <= months[i-1]) {
-      months[i] = months[i-1] + 1;
-      document.getElementById('m'+i).value = months[i];
+    if (months[i] <= months[i - 1]) {
+      months[i] = months[i - 1] + 1;
+      document.getElementById('m' + i).value = months[i];
     }
   }
 }
@@ -566,87 +849,270 @@ function enforce() {
 function laufzeit(tilgP, zinsP) {
   if (tilgP <= 0) return null;
   const mr = zinsP / 12;
-  const n = -Math.log(1 - mr / (tilgP/12 + mr)) / Math.log(1 + mr);
+  const n = -Math.log(1 - mr / (tilgP / 12 + mr)) / Math.log(1 + mr);
   return Math.ceil(n / 12);
 }
 
-function kfwForPhase(p, phaseStartMonth) {
-  if (p.kfwTotal <= 0) return { zins: 0, tilg: 0 };
-  const mr = p.kfwZins / 12;
-  const anlaufM = p.kfwAnlauf * 12;
-  const inAnlauf = phaseStartMonth <= anlaufM;
-  return { zins: p.kfwTotal * mr, tilg: inAnlauf ? 0 : p.kfwTotal * kfwTilgRate / 12 };
+function laufzeitMitSonder(total, tilgP, zinsP, tilgStartDate) {
+  if (tilgP <= 0 || total <= 0 || !tilgStartDate) return null;
+  const mr = zinsP / 12;
+  const annuitaet = total * (mr + tilgP / 12);
+  if (annuitaet <= total * mr) return null;
+
+  const events = sondertilgungen
+    .map(item => ({
+      date: parseIsoDate(item.date),
+      amount: Math.max(0, parseFloat(item.amount) || 0),
+    }))
+    .filter(item => item.date && item.amount > 0)
+    .sort((a, b) => a.date - b.date);
+
+  let balance = total;
+  let month = 0;
+  let idx = 0;
+
+  // Sondertilgungen vor Tilgungsbeginn wirken sofort.
+  while (idx < events.length && events[idx].date < tilgStartDate) {
+    balance -= events[idx].amount;
+    idx += 1;
+  }
+  if (balance <= 0) return 0;
+
+  while (month < 1200 && balance > 0) {
+    const monthStart = addMonths(tilgStartDate, month);
+    const monthEnd = addDays(addMonths(tilgStartDate, month + 1), -1);
+
+    const interestPart = balance * mr;
+    const principalPart = annuitaet - interestPart;
+    if (principalPart <= 0) return null;
+    balance -= principalPart;
+
+    while (idx < events.length && events[idx].date <= monthEnd) {
+      balance -= events[idx].amount;
+      idx += 1;
+    }
+
+    month += 1;
+  }
+
+  if (balance > 0) return null;
+  return Math.ceil(month / 12);
+}
+
+function simulateBisDatum(total, zinsP, tilgP, startDate, tilgStartDate, endDate) {
+  const result = { interestPaid: 0, principalPaid: 0, specialPaid: 0, restBalance: Math.max(0, total) };
+  if (total <= 0 || !startDate || !endDate || endDate < startDate) return result;
+
+  const events = sondertilgungen
+    .map(item => ({ date: parseIsoDate(item.date), amount: Math.max(0, parseFloat(item.amount) || 0) }))
+    .filter(item => item.date && item.amount > 0 && item.date >= startDate && item.date <= endDate)
+    .sort((a, b) => a.date - b.date);
+
+  let balance = total;
+  let idx = 0;
+  const mr = zinsP / 12;
+  const annuitaet = total * (mr + tilgP / 12);
+
+  for (let month = 0; month < 1200; month++) {
+    const monthStart = addMonths(startDate, month);
+    if (monthStart > endDate || balance <= 0) break;
+    const monthEnd = addDays(addMonths(startDate, month + 1), -1);
+
+    const interestPart = balance * mr;
+    result.interestPaid += interestPart;
+    const tilgungAktiv = tilgStartDate && monthStart >= tilgStartDate;
+    if (tilgungAktiv) {
+      const principalPart = Math.max(0, Math.min(balance, annuitaet - interestPart));
+      result.principalPaid += principalPart;
+      balance -= principalPart;
+    }
+
+    while (idx < events.length && events[idx].date <= monthEnd) {
+      const used = Math.min(balance, events[idx].amount);
+      result.specialPaid += used;
+      balance -= used;
+      idx += 1;
+      if (balance <= 0) break;
+    }
+  }
+
+  result.restBalance = Math.max(0, balance);
+  return result;
+}
+
+function buildMonatsratenAnteileBisZinsbindung(total, zinsP, tilgP, tilgStartDate, endDate) {
+  if (total <= 0 || !tilgStartDate || !endDate || endDate < tilgStartDate) {
+    return { labels: [], zinsen: [], tilgung: [] };
+  }
+
+  const labels = [];
+  const zinsen = [];
+  const tilgung = [];
+
+  const events = sondertilgungen
+    .map(item => ({ date: parseIsoDate(item.date), amount: Math.max(0, parseFloat(item.amount) || 0) }))
+    .filter(item => item.date && item.amount > 0 && item.date <= endDate)
+    .sort((a, b) => a.date - b.date);
+
+  let balance = total;
+  let idx = 0;
+  const mr = zinsP / 12;
+  const annuitaet = total * (mr + tilgP / 12);
+
+  while (idx < events.length && events[idx].date < tilgStartDate) {
+    balance -= Math.min(balance, events[idx].amount);
+    idx += 1;
+  }
+  if (balance <= 0) return { labels, zinsen, tilgung };
+
+  for (let month = 0; month < 1200; month++) {
+    const monthStart = addMonths(tilgStartDate, month);
+    if (monthStart > endDate || balance <= 0) break;
+    const monthEnd = addDays(addMonths(tilgStartDate, month + 1), -1);
+
+    const interestPart = balance * mr;
+    const principalPart = Math.max(0, Math.min(balance, annuitaet - interestPart));
+    balance -= principalPart;
+
+    while (idx < events.length && events[idx].date <= monthEnd) {
+      balance -= Math.min(balance, events[idx].amount);
+      idx += 1;
+      if (balance <= 0) break;
+    }
+
+    labels.push(monthStart.toLocaleDateString('de-DE', { month: '2-digit', year: '2-digit' }));
+    zinsen.push(interestPart);
+    tilgung.push(principalPart);
+  }
+
+  return { labels, zinsen, tilgung };
+}
+
+function buildRestschuldVerlaufBisZinsbindung(total, zinsP, tilgP, startDate, tilgStartDate, endDate) {
+  if (total <= 0 || !startDate || !endDate || endDate < startDate) {
+    return { labels: [], restschuld: [] };
+  }
+
+  const labels = [];
+  const restschuld = [];
+  const mr = zinsP / 12;
+  const annuitaet = total * (mr + tilgP / 12);
+
+  const events = sondertilgungen
+    .map(item => ({ date: parseIsoDate(item.date), amount: Math.max(0, parseFloat(item.amount) || 0) }))
+    .filter(item => item.date && item.amount > 0 && item.date >= startDate && item.date <= endDate)
+    .sort((a, b) => a.date - b.date);
+
+  let balance = total;
+  let idx = 0;
+
+  for (let month = 0; month < 1200; month++) {
+    const monthStart = addMonths(startDate, month);
+    if (monthStart > endDate) break;
+    const monthEnd = addDays(addMonths(startDate, month + 1), -1);
+
+    const tilgungAktiv = tilgStartDate && monthStart >= tilgStartDate && balance > 0;
+    if (tilgungAktiv) {
+      const interestPart = balance * mr;
+      const principalPart = Math.max(0, Math.min(balance, annuitaet - interestPart));
+      balance -= principalPart;
+    }
+
+    while (idx < events.length && events[idx].date <= monthEnd && balance > 0) {
+      balance -= Math.min(balance, events[idx].amount);
+      idx += 1;
+    }
+
+    labels.push(monthStart.toLocaleDateString('de-DE', { month: '2-digit', year: '2-digit' }));
+    restschuld.push(Math.max(0, balance));
+  }
+
+  return { labels, restschuld };
+}
+
+function parseIsoDate(iso) {
+  if (!iso) return null;
+  const parts = iso.split('-').map(v => parseInt(v, 10));
+  if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+  return new Date(parts[0], parts[1] - 1, parts[2], 12, 0, 0);
+}
+
+function addMonths(date, monthsToAdd) {
+  const d = new Date(date.getTime());
+  d.setMonth(d.getMonth() + monthsToAdd);
+  return d;
+}
+
+function addDays(date, days) {
+  const d = new Date(date.getTime());
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function deDate(date) {
+  return date.toLocaleDateString('de-DE');
+}
+
+function eurAxisCompact(v) {
+  const n = Number(v) || 0;
+  if (Math.abs(n) >= 1000) {
+    return (n / 1000).toLocaleString('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + 'k €';
+  }
+  return Math.round(n).toLocaleString('de-DE') + ' €';
+}
+
+function fullMonthsBetween(startDate, endDate) {
+  if (!startDate || !endDate || endDate < startDate) return 0;
+  let months = (endDate.getFullYear() - startDate.getFullYear()) * 12;
+  months += endDate.getMonth() - startDate.getMonth();
+  if (endDate.getDate() >= startDate.getDate()) months += 1;
+  return Math.max(0, months);
 }
 
 function buildPhases(p) {
   const { total, zinsJahr, bereitM, freeM } = p;
   const MR = zinsJahr / 12;
   const phases = [];
-  const amounts = TRANCHES_DEF.map(t => t.pct * total);
-  const kfwAnlaufM = p.kfwAnlauf * 12;
+  const bauBase = parseIsoDate(p.baubeginn) || parseIsoDate(p.auszahlungsdatum) || new Date(2026, 0, 1, 12, 0, 0);
+  const payoutBase = parseIsoDate(p.auszahlungsdatum) || bauBase;
+  const trancheRates = tranchePcts.map(v => v / 100);
+  const amounts = trancheRates.map(rate => rate * total);
 
   for (let i = 0; i < TRANCHES_DEF.length; i++) {
     const sm = months[i];
-    const em = i < TRANCHES_DEF.length - 1 ? months[i+1] - 1 : null;
-    const dis = amounts.slice(0, i+1).reduce((a,b) => a+b, 0);
+    const em = i < TRANCHES_DEF.length - 1 ? months[i + 1] - 1 : null;
+    const startDate = addMonths(bauBase, Math.max(0, sm - 1));
+    const nextStartDate = i < TRANCHES_DEF.length - 1 ? addMonths(bauBase, Math.max(0, months[i + 1] - 1)) : null;
+    const endDate = nextStartDate ? addDays(nextStartDate, -1) : null;
+    const payoutDate = addMonths(payoutBase, Math.max(0, sm - 1));
+    const dis = amounts.slice(0, i + 1).reduce((a, b) => a + b, 0);
     const und = total - dis;
     const reg = dis * MR;
     const isLast = i === TRANCHES_DEF.length - 1;
-
-    const push = (s, e, bereitAktiv) => {
-      const bi   = bereitAktiv && und > 0 ? und * bereitM : 0;
-      const tilg = isLast ? total * tilgRate / 12 : 0;
-      const kfw  = kfwForPhase(p, s);
-      const mainTotal = reg + bi + tilg;
-      const inAnlauf = p.kfwTotal > 0 && kfw.tilg === 0 && p.kfwAnlauf > 0;
-      let label = TRANCHES_DEF[i].label;
-      if (isLast && kfwAnlaufM > 0) {
-        if (e !== null && s === months[i]) label = 'Bauabnahme (KfW Anlauf)';
-        else if (e !== null && inAnlauf)   label = 'KfW tilgungsfrei';
-        else if (s > kfwAnlaufM)           label = 'Volltilgung';
-        else if (s === months[i])          label = 'Bauabnahme';
-      }
-      phases.push({
-        label, sm: s, em: e, dis, und, reg, bi, tilg, mainTotal,
-        kfwZins: kfw.zins, kfwTilg: kfw.tilg,
-        combined: mainTotal + kfw.zins + kfw.tilg,
-        bereitAktiv, isLast, zinsfreiPhase: !bereitAktiv && und > 0,
-        kfwInAnlauf: inAnlauf,
-        isVolltilgung: isLast && s > kfwAnlaufM && kfwAnlaufM > 0,
-      });
-    };
-
-    const splitPoints = new Set();
-    if (em !== null) {
-      if (freeM >= sm && freeM < em) splitPoints.add(freeM);
-      if (kfwAnlaufM > 0 && kfwAnlaufM >= sm && kfwAnlaufM < em) splitPoints.add(kfwAnlaufM);
-    } else {
-      if (kfwAnlaufM > 0 && kfwAnlaufM >= sm) splitPoints.add(kfwAnlaufM);
-    }
-    const cuts = [...splitPoints].sort((a,b) => a - b);
-
-    if (cuts.length === 0) {
-      push(sm, em, sm > freeM);
-    } else {
-      let cur = sm;
-      for (const cut of cuts) { push(cur, cut, cur > freeM); cur = cut + 1; }
-      push(cur, em, cur > freeM);
-    }
+    const bi = sm > freeM && und > 0 ? und * bereitM : 0;
+    const tilg = isLast ? total * tilgRate / 12 : 0;
+    phases.push({
+      label: TRANCHES_DEF[i].label,
+      sm,
+      em,
+      startDate,
+      endDate,
+      payoutDate,
+      dis,
+      und,
+      reg,
+      bi,
+      tilg,
+      combined: reg + bi + tilg,
+      isLast,
+      zinsfreiPhase: !(sm > freeM) && und > 0,
+    });
   }
   return phases;
 }
 
 // ── Chart ─────────────────────────────────────────────────────
-function chartColors() {
-  const dark = document.documentElement.getAttribute('data-theme') === 'dark';
-  return {
-    tick:  dark ? '#888580' : '#888077',
-    grid:  dark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.06)',
-  };
-}
-
-function renderChart(phases, p) {
-  const { tick, grid } = chartColors();
+function renderChart(phases) {
   const h = Math.max(280, phases.length * 48 + 80);
   document.getElementById('chart-wrap').style.height = h + 'px';
   if (chart) chart.destroy();
@@ -655,78 +1121,175 @@ function renderChart(phases, p) {
     data: {
       labels: phases.map(ph => ph.label),
       datasets: [
-        { label: 'Zinsen (Haupt)',        data: phases.map(ph => Math.round(ph.reg)),     backgroundColor: '#5a85c4', borderRadius: 3 },
-        { label: 'Bereitstellungszinsen', data: phases.map(ph => Math.round(ph.bi)),      backgroundColor: '#c46a5a', borderRadius: 3 },
-        { label: 'Tilgung (Haupt)',       data: phases.map(ph => Math.round(ph.tilg)),    backgroundColor: '#6aab90', borderRadius: 3 },
-        { label: 'Zinsen (KfW)',          data: phases.map(ph => Math.round(ph.kfwZins)), backgroundColor: '#9a7ec8', borderRadius: 3 },
-        { label: 'Tilgung (KfW)',         data: phases.map(ph => Math.round(ph.kfwTilg)),backgroundColor: '#b89de0', borderRadius: 3 },
-      ]
+        { label: 'Zinsen', data: phases.map(ph => Math.round(ph.reg)), backgroundColor: '#5a85c4', borderRadius: 3 },
+        { label: 'Bereitstellungszinsen', data: phases.map(ph => Math.round(ph.bi)), backgroundColor: '#c46a5a', borderRadius: 3 },
+        { label: 'Tilgung', data: phases.map(ph => Math.round(ph.tilg)), backgroundColor: '#6aab90', borderRadius: 3 },
+      ],
     },
     options: {
-      indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw.toLocaleString('de-DE')} €` } }
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw.toLocaleString('de-DE')} €` } },
       },
       scales: {
-        x: { stacked: true, ticks: { color: tick, font: { size: 11, family: 'DM Mono' }, callback: v => v.toLocaleString('de-DE') + ' €' }, grid: { color: grid } },
-        y: { stacked: true, ticks: { color: tick, font: { size: 12, family: 'DM Sans' } }, grid: { display: false } }
-      }
-    }
+        x: {
+          stacked: true,
+          ticks: { color: '#888077', font: { size: 11, family: 'DM Mono' }, callback: v => v.toLocaleString('de-DE') + ' €' },
+          grid: { color: 'rgba(0,0,0,0.06)' },
+        },
+        y: { stacked: true, ticks: { color: '#888077', font: { size: 12, family: 'DM Sans' } }, grid: { display: false } },
+      },
+    },
+  });
+}
+
+function renderTimelineChart(series) {
+  const h = 320;
+  document.getElementById('timeline-wrap').style.height = h + 'px';
+  if (timelineChart) timelineChart.destroy();
+  timelineChart = new Chart(document.getElementById('timelineChart'), {
+    type: 'line',
+    data: {
+      labels: series.labels,
+      datasets: [
+        {
+          label: 'Zinsanteil der Monatsrate',
+          data: series.zinsen.map(v => Math.round(v)),
+          borderColor: '#5a85c4',
+          backgroundColor: 'rgba(90,133,196,0.14)',
+          pointRadius: 3,
+          pointHoverRadius: 4,
+          tension: 0.25,
+          fill: false,
+        },
+        {
+          label: 'Tilgungsanteil der Monatsrate',
+          data: series.tilgung.map(v => Math.round(v)),
+          borderColor: '#6aab90',
+          backgroundColor: 'rgba(106,171,144,0.14)',
+          pointRadius: 3,
+          pointHoverRadius: 4,
+          tension: 0.25,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { left: 12, right: 8, top: 4, bottom: 0 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw.toLocaleString('de-DE')} €` } },
+      },
+      scales: {
+        x: { ticks: { color: '#888077', font: { size: 11, family: 'DM Mono' }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: {
+          ticks: { color: '#888077', font: { size: 10, family: 'DM Mono' }, callback: v => eurAxisCompact(v), maxTicksLimit: 7 },
+          grid: { color: 'rgba(0,0,0,0.06)' },
+        },
+      },
+    },
+  });
+}
+
+function renderBalanceChart(series) {
+  const h = 300;
+  document.getElementById('balance-wrap').style.height = h + 'px';
+  if (balanceChart) balanceChart.destroy();
+  balanceChart = new Chart(document.getElementById('balanceChart'), {
+    type: 'line',
+    data: {
+      labels: series.labels,
+      datasets: [
+        {
+          label: 'Restschuld je Monat',
+          data: series.restschuld.map(v => Math.round(v)),
+          borderColor: '#c46a5a',
+          backgroundColor: 'rgba(196,106,90,0.14)',
+          pointRadius: 2.5,
+          pointHoverRadius: 4,
+          tension: 0.2,
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { left: 12, right: 8, top: 4, bottom: 0 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: c => ` ${c.dataset.label}: ${c.raw.toLocaleString('de-DE')} €` } },
+      },
+      scales: {
+        x: { ticks: { color: '#888077', font: { size: 11, family: 'DM Mono' }, maxRotation: 0, autoSkip: true, maxTicksLimit: 12 }, grid: { color: 'rgba(0,0,0,0.04)' } },
+        y: {
+          ticks: { color: '#888077', font: { size: 10, family: 'DM Mono' }, callback: v => eurAxisCompact(v), maxTicksLimit: 7 },
+          grid: { color: 'rgba(0,0,0,0.06)' },
+        },
+      },
+    },
   });
 }
 
 // ── Main calculate ────────────────────────────────────────────
 function calculate() {
+  enforceMonths();
   const p = getParams();
   const phases = buildPhases(p);
+  const tilgBeginnDate = parseIsoDate(p.tilgungsbeginn);
+  const auszahlungStartDate = parseIsoDate(p.auszahlungsdatum);
 
-  // Update tranche labels
-  TRANCHES_DEF.forEach((t, i) => {
-    const el = document.getElementById('pct-'+i);
-    if (el) {
-      const text = fmt(t.pct*100, 0) + ' % · ' + eur(t.pct * p.total);
-      el.textContent = text;
-      el.setAttribute('data-tooltip', text);
-    }
+  // Sync tranche inputs
+  tranchePcts.forEach((pct, i) => {
+    const pctEl = document.getElementById('pct-' + i);
+    if (pctEl) pctEl.value = toInputNumber(pct, 1);
+    const eurEl = document.getElementById('eur-' + i);
+    if (eurEl) eurEl.textContent = eur((pct / 100) * p.total);
   });
-  // Sync months inputs
+  const totalPct = tranchePcts.reduce((sum, val) => sum + val, 0);
+  const totalEl = document.getElementById('tranche-total-pct');
+  totalEl.textContent = fmt(totalPct, 1) + ' %';
+  totalEl.className = 'tranche-summary-value ' + (Math.abs(totalPct - 100) < 0.05 ? 'ok' : 'warn');
   months.forEach((m, i) => {
-    const el = document.getElementById('m'+i);
-    if (el && parseInt(el.value) !== m) el.value = m;
+    const el = document.getElementById('m' + i);
+    if (el && parseInt(el.value, 10) !== m) el.value = m;
   });
 
-  document.getElementById('gesamt-vol').textContent = eur(p.total + p.kfwTotal);
+  document.getElementById('gesamt-vol').textContent = eur(p.total);
 
-  // KfW strip
-  const kfwMR = p.kfwZins / 12;
-  const kfwZinsOnly = p.kfwTotal * kfwMR;
-  const kfwAnnuität = p.kfwTotal * (kfwMR + kfwTilgRate / 12);
-  const kfwJahre = p.kfwTotal > 0 ? laufzeit(kfwTilgRate, p.kfwZins) : null;
-  document.getElementById('kfw-strip').innerHTML = p.kfwTotal > 0 ? `
-    <div class="kfw-info-item">
-      <div class="kfw-info-label">Zinsen Anlaufzeit</div>
-      <div class="kfw-info-val">${eur(kfwZinsOnly)}</div>
-    </div>
-    <div class="kfw-info-item">
-      <div class="kfw-info-label">Annuität ab Mo. ${p.kfwAnlauf * 12 + 1}</div>
-      <div class="kfw-info-val">${eur(kfwAnnuität)}</div>
-    </div>
-    <div class="kfw-info-item">
-      <div class="kfw-info-label">KfW-Laufzeit</div>
-      <div class="kfw-info-val">${kfwJahre ? kfwJahre + ' J.' : '–'}</div>
-    </div>` :
-    `<div style="color:var(--hint);font-size:11px;font-family:var(--font-mono);grid-column:1/-1;text-align:center">KfW-Betrag = 0</div>`;
-
-  const bauabnahmePhase   = phases.find(ph => ph.isLast) || phases[phases.length-1];
-  const volltilgungPhase  = phases.find(ph => ph.isVolltilgung) || bauabnahmePhase;
-  const hauptJahre = laufzeit(tilgRate, p.zinsJahr);
-  const bauzeitPhases = phases.filter(ph => !ph.isLast && !ph.isVolltilgung);
+  const bauabnahmePhase = phases.find(ph => ph.isLast) || phases[phases.length - 1];
+  const tilgStartForLaufzeit = tilgBeginnDate || bauabnahmePhase.startDate;
+  const hauptJahre = laufzeitMitSonder(p.total, tilgRate, p.zinsJahr, tilgStartForLaufzeit) || laufzeit(tilgRate, p.zinsJahr);
+  const zinsbindungEnde = auszahlungStartDate ? addMonths(auszahlungStartDate, Math.round(p.zinsbindungJahre * 12)) : null;
+  const tilgStartForRest = tilgBeginnDate || bauabnahmePhase.startDate;
+  const simBisBindung = simulateBisDatum(p.total, p.zinsJahr, tilgRate, auszahlungStartDate, tilgStartForRest, zinsbindungEnde);
+  const sondertilgungBisBindung = simBisBindung.specialPaid;
+  const tilgungGesamtBisBindung = simBisBindung.principalPaid + simBisBindung.specialPaid;
+  const zinsenBisBindung = simBisBindung.interestPaid;
+  const jahreBisZinsbindung = zinsbindungEnde ? (fullMonthsBetween(tilgStartForRest, zinsbindungEnde) / 12) : 0;
+  const kalkTilgRateMitSonder = (p.total > 0 && jahreBisZinsbindung > 0)
+    ? (tilgungGesamtBisBindung / (p.total * jahreBisZinsbindung)) * 100
+    : 0;
+  const restschuldZumBindungsende = simBisBindung.restBalance;
+  const verlaufMonatsrate = buildMonatsratenAnteileBisZinsbindung(p.total, p.zinsJahr, tilgRate, tilgStartForRest, zinsbindungEnde);
+  const restschuldVerlauf = buildRestschuldVerlaufBisZinsbindung(
+    p.total,
+    p.zinsJahr,
+    tilgRate,
+    auszahlungStartDate || tilgStartForRest,
+    tilgStartForRest,
+    zinsbindungEnde
+  );
+  const bauzeitPhases = phases.filter(ph => !ph.isLast);
   const maxBauzeit = bauzeitPhases.length > 0
     ? Math.max(...bauzeitPhases.map(ph => ph.combined + p.miete))
     : phases[0].combined + p.miete;
 
-  // Metrics
   document.getElementById('metrics').innerHTML = `
     <div class="metric">
       <div class="metric-label">Erste Gesamtrate</div>
@@ -741,29 +1304,42 @@ function calculate() {
       <div class="metric-label">Rate ab Bauabnahme</div>
       <div class="metric-value">${eur(bauabnahmePhase.combined)}</div>
     </div>
-    <div class="metric combined">
-      <div class="metric-label">Rate nach KfW-Anlaufzeit</div>
-      <div class="metric-value">${eur(volltilgungPhase.combined)}</div>
+    <div class="metric accent">
+      <div class="metric-label">Darlehen schuldenfrei in ca.</div>
+      <div class="metric-value">${hauptJahre ? hauptJahre + ' Jahren' : '–'}</div>
     </div>
-    <div class="metric kfw">
-      <div class="metric-label">KfW-Annuität (nach Anlauf)</div>
-      <div class="metric-value">${p.kfwTotal > 0 ? eur(kfwAnnuität) : '–'}</div>
+    <div class="metric">
+      <div class="metric-label">Kalk. Tilgungsrate inkl. Sondertilgung (bis Zinsbindung)</div>
+      <div class="metric-value">${fmt(kalkTilgRateMitSonder, 2)} % p.a.</div>
+      <div style="font-size:10px;color:var(--hint);margin-top:3px;font-family:var(--font-mono)">
+        ${zinsbindungEnde ? `Zeitraum bis ${deDate(zinsbindungEnde)}${sondertilgungBisBindung > 0 ? ` · inkl. ${eur(sondertilgungBisBindung)} Sondertilgung` : ''}` : '–'}
+      </div>
     </div>
     <div class="metric accent">
-      <div class="metric-label">Haupt schuldenfrei in ca.</div>
-      <div class="metric-value">${hauptJahre ? hauptJahre + ' Jahren' : '–'}</div>
+      <div class="metric-label">Gezahlte Tilgung bis Zinsbindung</div>
+      <div class="metric-value">${eur(tilgungGesamtBisBindung)}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Gezahlte Zinsen bis Zinsbindung</div>
+      <div class="metric-value">${eur(zinsenBisBindung)}</div>
+    </div>
+    <div class="metric combined">
+      <div class="metric-label">Restschuld Ende Zinsbindung</div>
+      <div class="metric-value">${eur(restschuldZumBindungsende)}</div>
+      <div style="font-size:10px;color:var(--hint);margin-top:3px;font-family:var(--font-mono)">
+        ${zinsbindungEnde ? `zum ${deDate(zinsbindungEnde)} (${fmt(p.zinsbindungJahre, 1)} J.)${sondertilgungBisBindung > 0 ? ` · inkl. ${eur(sondertilgungBisBindung)} Sondertilgung` : ''}` : '–'}
+      </div>
     </div>
   `;
 
-  renderChart(phases, p);
+  renderChart(phases);
+  renderTimelineChart(verlaufMonatsrate);
+  renderBalanceChart(restschuldVerlauf);
 
-  // Table
-  const hasKfw = p.kfwTotal > 0;
   let rows = `<thead>
     <tr class="group-row">
       <th colspan="4"></th>
-      <th colspan="3" class="g-main" style="text-align:center">— Hauptdarlehen —</th>
-      ${hasKfw ? `<th colspan="2" class="g-kfw" style="text-align:center">— KfW-Darlehen —</th>` : ''}
+      <th colspan="3" class="g-main" style="text-align:center">— Darlehen —</th>
       <th class="g-total" style="text-align:right">— Gesamt —</th>
       ${p.miete > 0 ? `<th style="color:rgba(196,106,90,0.7);text-align:right">— Bauzeit —</th>` : ''}
     </tr>
@@ -775,20 +1351,21 @@ function calculate() {
       <th>Zinsen</th>
       <th>Bereitst.</th>
       <th>Tilgung</th>
-      ${hasKfw ? `<th>KfW Zinsen</th><th>KfW Tilgung</th>` : ''}
       <th>/ Monat</th>
       ${p.miete > 0 ? `<th style="color:#e0917f">+ Miete</th>` : ''}
     </tr>
   </thead><tbody>`;
 
   phases.forEach(ph => {
-    const zr = ph.em ? `Mo. ${ph.sm}–${ph.em}` : `ab Mo. ${ph.sm}`;
-    const biCell  = ph.bi > 0 ? `<span class="c-bereit">${eur(ph.bi)}</span>` : ph.zinsfreiPhase ? `<span class="zinsfrei">zinsfrei</span>` : '–';
-    const tilgCell= ph.tilg > 0 ? `<span class="c-tilg">${eur(ph.tilg)}</span>` : '–';
-    const kzCell  = hasKfw ? `<span class="c-kzins">${eur(ph.kfwZins)}</span>` : '';
-    const ktCell  = hasKfw ? (ph.kfwTilg > 0 ? `<span class="c-ktilg">${eur(ph.kfwTilg)}</span>` : `<span class="zinsfrei">tilgungsfrei</span>`) : '';
-    const rowClass = ph.isVolltilgung ? 'volltilgung-row' : ph.isLast ? 'last-row' : '';
-    const isBauzeit = !ph.isLast && !ph.isVolltilgung;
+    const zr = ph.endDate
+      ? `${deDate(ph.startDate)}–${deDate(ph.endDate)}`
+      : tilgBeginnDate
+        ? `ab ${deDate(ph.startDate)} (Tilgung: ${deDate(tilgBeginnDate)})`
+        : `ab ${deDate(ph.startDate)}`;
+    const biCell = ph.bi > 0 ? `<span class="c-bereit">${eur(ph.bi)}</span>` : ph.zinsfreiPhase ? `<span class="zinsfrei">zinsfrei</span>` : '–';
+    const tilgCell = ph.tilg > 0 ? `<span class="c-tilg">${eur(ph.tilg)}</span>` : '–';
+    const rowClass = ph.isLast ? 'last-row' : '';
+    const isBauzeit = !ph.isLast;
     const mieteCell = p.miete > 0
       ? isBauzeit
         ? `<td style="color:#e0917f;font-weight:500">${eur(ph.combined + p.miete)}</td>`
@@ -803,7 +1380,6 @@ function calculate() {
       <td>${eur(ph.reg)}</td>
       <td>${biCell}</td>
       <td>${tilgCell}</td>
-      ${hasKfw ? `<td>${kzCell}</td><td>${ktCell}</td>` : ''}
       <td class="c-total">${eur(ph.combined)}</td>
       ${mieteCell}
     </tr>`;
@@ -814,6 +1390,8 @@ function calculate() {
 
 // ── Boot ──────────────────────────────────────────────────────
 loadState();
+renderSondertilgungen();
+setActiveTab(activeTab, false);
 calculate();
 </script>
 </body>
