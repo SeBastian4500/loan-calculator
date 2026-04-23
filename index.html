@@ -71,6 +71,7 @@ h1 { font-family: var(--font-serif); font-size: clamp(24px, 4vw, 38px); font-wei
 .gesamtvolumen { text-align: right; }
 .gesamtvolumen-label { font-family: var(--font-mono); font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px; }
 .gesamtvolumen-value { font-family: var(--font-serif); font-size: 26px; color: var(--accent); }
+.header-tools { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; justify-content: flex-end; }
 
 .tab-switch {
   display: inline-flex;
@@ -341,6 +342,42 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
   align-items: end;
 }
 .sonder-row .field { margin-bottom: 0; }
+.validation-box {
+  border: 1px solid rgba(196,106,90,0.35);
+  background: rgba(196,106,90,0.08);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+.validation-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: #b86d5f;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+}
+.validation-text { font-size: 12px; color: #a45f52; line-height: 1.5; }
+.kpi-info {
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  margin-left: 4px;
+  border: 1px solid var(--border2);
+  color: var(--muted);
+  cursor: help;
+}
+.test-result {
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.5;
+  white-space: pre-line;
+}
 
 /* ── Responsive ──────────────────────────────────────────────── */
 @media (max-width: 900px) {
@@ -355,6 +392,7 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
   .header-right { align-items: flex-start; width: 100%; }
   .gesamtvolumen { text-align: left; }
   .gesamtvolumen-value { font-size: 22px; }
+  .header-tools { justify-content: flex-start; }
   .grid-layout { gap: 14px; }
   .main { gap: 14px; }
   .card, .chart-card { padding: 14px; border-radius: 12px; }
@@ -423,6 +461,12 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
         <div class="gesamtvolumen-label">Finanzierung</div>
         <div class="gesamtvolumen-value" id="gesamt-vol">–</div>
       </div>
+      <div class="header-tools">
+        <button class="btn-small" id="export-config" type="button">Export JSON</button>
+        <button class="btn-small" id="import-config" type="button">Import JSON</button>
+        <button class="btn-small" id="pdf-snapshot" type="button">PDF Snapshot</button>
+        <input type="file" id="import-file" accept="application/json" style="display:none">
+      </div>
     </div>
   </header>
 
@@ -435,6 +479,7 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
 
   <div class="tab-panel active" id="tab-dashboard">
     <div class="main">
+      <div id="validation-box"></div>
       <div class="metrics" id="metrics"></div>
 
       <div class="chart-card">
@@ -550,6 +595,11 @@ tbody tr.volltilgung-row td.c-total { font-size: 13px; }
           Tilgung ab Bauabnahme
         </div>
       </div>
+      <div class="card">
+        <div class="card-title">Rechentests (Quick Check)</div>
+        <button class="btn-small" id="run-tests" type="button">Tests ausführen</button>
+        <div class="test-result" id="test-result">Noch nicht ausgeführt.</div>
+      </div>
     </div>
   </div>
   </div>
@@ -617,13 +667,42 @@ function setActiveTab(tab, persist = true) {
   if (persist) saveState();
 }
 
-// ── Persistence ───────────────────────────────────────────────
-function saveState() {
+function serializeAppState() {
   const state = { months, tranchePcts, sondertilgungen, tilgRate, activeTab, inputs: {} };
   Object.keys(DEFAULT_INPUTS).forEach(id => {
     const el = document.getElementById(id);
     if (el) state.inputs[id] = el.value;
   });
+  return state;
+}
+
+function applyImportedState(s) {
+  if (!s || typeof s !== 'object') return;
+  if (Array.isArray(s.months) && s.months.length === DEFAULT_MONTHS.length) {
+    months = s.months.map(v => parseInt(v, 10) || 1);
+  }
+  if (Array.isArray(s.tranchePcts) && s.tranchePcts.length === DEFAULT_TRANCHE_PCTS.length) {
+    tranchePcts = s.tranchePcts.map(v => Math.max(0, Math.min(100, parseFloat(v) || 0)));
+    normalizeTranchePcts();
+  }
+  if (Array.isArray(s.sondertilgungen)) {
+    sondertilgungen = s.sondertilgungen
+      .map(entry => ({ date: typeof entry.date === 'string' ? entry.date : '', amount: Math.max(0, parseFloat(entry.amount) || 0) }))
+      .filter(entry => entry.date || entry.amount > 0);
+  }
+  if (typeof s.tilgRate === 'number') tilgRate = s.tilgRate;
+  if (typeof s.activeTab === 'string') activeTab = s.activeTab;
+  if (s.inputs && typeof s.inputs === 'object') {
+    Object.entries(s.inputs).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.value = val;
+    });
+  }
+}
+
+// ── Persistence ───────────────────────────────────────────────
+function saveState() {
+  const state = serializeAppState();
   try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) {}
 }
 
@@ -632,27 +711,7 @@ function loadState() {
     const raw = localStorage.getItem(STORE_KEY);
     if (!raw) return;
     const s = JSON.parse(raw);
-    if (s.months && s.months.length === DEFAULT_MONTHS.length) months = s.months.map(v => parseInt(v, 10) || 1);
-    if (s.tranchePcts && s.tranchePcts.length === DEFAULT_TRANCHE_PCTS.length) {
-      tranchePcts = s.tranchePcts.map(v => Math.max(0, Math.min(100, parseFloat(v) || 0)));
-      normalizeTranchePcts();
-    }
-    if (Array.isArray(s.sondertilgungen)) {
-      sondertilgungen = s.sondertilgungen
-        .map(entry => ({
-          date: typeof entry.date === 'string' ? entry.date : '',
-          amount: Math.max(0, parseFloat(entry.amount) || 0),
-        }))
-        .filter(entry => entry.date || entry.amount > 0);
-    }
-    if (s.tilgRate) tilgRate = s.tilgRate;
-    if (s.activeTab) activeTab = s.activeTab;
-    if (s.inputs) {
-      Object.entries(s.inputs).forEach(([id, val]) => {
-        const el = document.getElementById(id);
-        if (el) el.value = val;
-      });
-    }
+    applyImportedState(s);
     document.getElementById('tilgVal').textContent = fmt(parseFloat(document.getElementById('tilgSlider').value), 1) + ' %';
     tilgRate = parseFloat(document.getElementById('tilgSlider').value) / 100;
     renderSondertilgungen();
@@ -762,6 +821,55 @@ document.getElementById('tilgSlider').addEventListener('input', e => {
   saveState();
   calculate();
 });
+
+const exportBtn = document.getElementById('export-config');
+const importBtn = document.getElementById('import-config');
+const importFile = document.getElementById('import-file');
+const pdfBtn = document.getElementById('pdf-snapshot');
+const runTestsBtn = document.getElementById('run-tests');
+
+if (exportBtn) {
+  exportBtn.addEventListener('click', () => {
+    const blob = new Blob([JSON.stringify(serializeAppState(), null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `immorechner-config-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  });
+}
+if (importBtn && importFile) {
+  importBtn.addEventListener('click', () => importFile.click());
+  importFile.addEventListener('change', e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(String(reader.result || '{}'));
+        applyImportedState(data);
+        saveState();
+        renderSondertilgungen();
+        setActiveTab(activeTab, false);
+        calculate();
+      } catch (err) {
+        alert('Import fehlgeschlagen: Ungueltige JSON-Datei.');
+      }
+    };
+    reader.readAsText(file);
+    importFile.value = '';
+  });
+}
+if (pdfBtn) {
+  pdfBtn.addEventListener('click', () => window.print());
+}
+if (runTestsBtn) {
+  runTestsBtn.addEventListener('click', () => {
+    const res = runSelfTests();
+    const el = document.getElementById('test-result');
+    if (el) el.textContent = res;
+  });
+}
 
 // ── Helpers ───────────────────────────────────────────────────
 function eur(v) { return v.toLocaleString('de-DE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }); }
@@ -1069,6 +1177,123 @@ function fullMonthsBetween(startDate, endDate) {
   return Math.max(0, months);
 }
 
+function validateInputs(p) {
+  const warnings = [];
+  const bau = parseIsoDate(p.baubeginn);
+  const aus = parseIsoDate(p.auszahlungsdatum);
+  const tilg = parseIsoDate(p.tilgungsbeginn);
+  if (bau && aus && aus < bau) warnings.push('Auszahlungsbeginn liegt vor Baubeginn.');
+  if (aus && tilg && tilg < aus) warnings.push('Tilgungsbeginn liegt vor Auszahlungsbeginn.');
+  const pctSum = tranchePcts.reduce((sum, v) => sum + v, 0);
+  if (Math.abs(pctSum - 100) > 0.1) warnings.push(`Tranchen summieren sich auf ${fmt(pctSum, 1)} % statt 100,0 %.`);
+  if (p.zinsbindungJahre <= 0) warnings.push('Zinsbindung muss groesser als 0 sein.');
+  if (p.total <= 0) warnings.push('Kreditbetrag muss groesser als 0 sein.');
+  return warnings;
+}
+
+function renderValidation(messages) {
+  const box = document.getElementById('validation-box');
+  if (!box) return;
+  if (!messages.length) {
+    box.innerHTML = '';
+    return;
+  }
+  box.innerHTML = `
+    <div class="validation-box">
+      <div class="validation-title">Plausibilitaetshinweise</div>
+      <div class="validation-text">${messages.join('<br>')}</div>
+    </div>
+  `;
+}
+
+const FinanceModel = {
+  computeBindingStats({ total, zinsJahr, tilgRate, auszahlungStartDate, tilgStartDate, zinsbindungJahre }) {
+    const zinsbindungEnde = auszahlungStartDate ? addMonths(auszahlungStartDate, Math.round(zinsbindungJahre * 12)) : null;
+    const sim = simulateBisDatum(total, zinsJahr, tilgRate, auszahlungStartDate, tilgStartDate, zinsbindungEnde);
+    const jahre = zinsbindungEnde ? (fullMonthsBetween(tilgStartDate, zinsbindungEnde) / 12) : 0;
+    const kalkTilgRate = (total > 0 && jahre > 0)
+      ? ((sim.principalPaid + sim.specialPaid) / (total * jahre)) * 100
+      : 0;
+    return {
+      zinsbindungEnde,
+      sondertilgungBisBindung: sim.specialPaid,
+      tilgungGesamtBisBindung: sim.principalPaid + sim.specialPaid,
+      zinsenBisBindung: sim.interestPaid,
+      kalkTilgRateMitSonder: kalkTilgRate,
+      restschuldZumBindungsende: sim.restBalance,
+    };
+  },
+};
+
+function runSelfTests() {
+  const approx = (actual, expected, tolerance = 0.01) => Math.abs(actual - expected) <= tolerance;
+  const tests = [];
+  const baseDate = new Date(2026, 0, 1, 12, 0, 0);
+  const end12Months = addDays(addMonths(baseDate, 12), -1);
+  const originalSonder = JSON.parse(JSON.stringify(sondertilgungen));
+
+  try {
+    sondertilgungen = [];
+    tests.push({
+      name: 'fullMonthsBetween(12 Monate)',
+      pass: fullMonthsBetween(baseDate, end12Months) === 12,
+      detail: `soll=12, ist=${fullMonthsBetween(baseDate, end12Months)}`,
+    });
+
+    const simNoTilg = simulateBisDatum(100000, 0.03, 0.02, baseDate, addMonths(baseDate, 24), end12Months);
+    tests.push({
+      name: '12M nur Zinsen (ohne Tilgung)',
+      pass: approx(simNoTilg.interestPaid, 3000, 0.01) && approx(simNoTilg.principalPaid, 0, 0.0001),
+      detail: `Zinsen soll=3000, ist=${simNoTilg.interestPaid.toFixed(2)}; Tilgung soll=0, ist=${simNoTilg.principalPaid.toFixed(2)}`,
+    });
+
+    const simWithTilg = simulateBisDatum(100000, 0.03, 0.02, baseDate, baseDate, end12Months);
+    tests.push({
+      name: '12M Annuitaet (ohne Sondertilgung)',
+      pass:
+        approx(simWithTilg.interestPaid, 2972.2695, 0.02) &&
+        approx(simWithTilg.principalPaid, 2027.7305, 0.02) &&
+        approx(simWithTilg.restBalance, 97972.2695, 0.02),
+      detail: `Zins=${simWithTilg.interestPaid.toFixed(2)}, Tilgung=${simWithTilg.principalPaid.toFixed(2)}, Rest=${simWithTilg.restBalance.toFixed(2)}`,
+    });
+
+    sondertilgungen = [{ date: '2026-06-15', amount: 5000 }];
+    const simWithSonder = simulateBisDatum(100000, 0.03, 0.02, baseDate, baseDate, end12Months);
+    tests.push({
+      name: '12M mit 5.000 EUR Sondertilgung',
+      pass:
+        approx(simWithSonder.interestPaid, 2896.7992, 0.02) &&
+        approx(simWithSonder.principalPaid, 2103.2008, 0.02) &&
+        approx(simWithSonder.specialPaid, 5000, 0.01) &&
+        approx(simWithSonder.restBalance, 92896.7992, 0.02),
+      detail: `Zins=${simWithSonder.interestPaid.toFixed(2)}, Tilgung=${simWithSonder.principalPaid.toFixed(2)}, Sonder=${simWithSonder.specialPaid.toFixed(2)}, Rest=${simWithSonder.restBalance.toFixed(2)}`,
+    });
+
+    sondertilgungen = [];
+    const bindStats = FinanceModel.computeBindingStats({
+      total: 100000,
+      zinsJahr: 0.03,
+      tilgRate: 0.02,
+      auszahlungStartDate: baseDate,
+      tilgStartDate: baseDate,
+      zinsbindungJahre: 1,
+    });
+    tests.push({
+      name: 'BindingStats 1 Jahr (konsistent)',
+      pass:
+        approx(bindStats.zinsenBisBindung, 3217.2002, 0.03) &&
+        approx(bindStats.tilgungGesamtBisBindung, 2199.4665, 0.03) &&
+        approx(bindStats.restschuldZumBindungsende, 97800.5335, 0.03),
+      detail: `Zins=${bindStats.zinsenBisBindung.toFixed(2)}, Tilgung=${bindStats.tilgungGesamtBisBindung.toFixed(2)}, Rest=${bindStats.restschuldZumBindungsende.toFixed(2)}`,
+    });
+  } finally {
+    sondertilgungen = originalSonder;
+  }
+
+  const passed = tests.filter(t => t.pass).length;
+  return `${passed}/${tests.length} Tests erfolgreich\n` + tests.map(t => `${t.pass ? 'OK' : 'FAIL'} ${t.name} · ${t.detail}`).join('\n');
+}
+
 function buildPhases(p) {
   const { total, zinsJahr, bereitM, freeM } = p;
   const MR = zinsJahr / 12;
@@ -1240,6 +1465,7 @@ function renderBalanceChart(series) {
 function calculate() {
   enforceMonths();
   const p = getParams();
+  renderValidation(validateInputs(p));
   const phases = buildPhases(p);
   const tilgBeginnDate = parseIsoDate(p.tilgungsbeginn);
   const auszahlungStartDate = parseIsoDate(p.auszahlungsdatum);
@@ -1265,17 +1491,21 @@ function calculate() {
   const bauabnahmePhase = phases.find(ph => ph.isLast) || phases[phases.length - 1];
   const tilgStartForLaufzeit = tilgBeginnDate || bauabnahmePhase.startDate;
   const hauptJahre = laufzeitMitSonder(p.total, tilgRate, p.zinsJahr, tilgStartForLaufzeit) || laufzeit(tilgRate, p.zinsJahr);
-  const zinsbindungEnde = auszahlungStartDate ? addMonths(auszahlungStartDate, Math.round(p.zinsbindungJahre * 12)) : null;
   const tilgStartForRest = tilgBeginnDate || bauabnahmePhase.startDate;
-  const simBisBindung = simulateBisDatum(p.total, p.zinsJahr, tilgRate, auszahlungStartDate, tilgStartForRest, zinsbindungEnde);
-  const sondertilgungBisBindung = simBisBindung.specialPaid;
-  const tilgungGesamtBisBindung = simBisBindung.principalPaid + simBisBindung.specialPaid;
-  const zinsenBisBindung = simBisBindung.interestPaid;
-  const jahreBisZinsbindung = zinsbindungEnde ? (fullMonthsBetween(tilgStartForRest, zinsbindungEnde) / 12) : 0;
-  const kalkTilgRateMitSonder = (p.total > 0 && jahreBisZinsbindung > 0)
-    ? (tilgungGesamtBisBindung / (p.total * jahreBisZinsbindung)) * 100
-    : 0;
-  const restschuldZumBindungsende = simBisBindung.restBalance;
+  const bindingStats = FinanceModel.computeBindingStats({
+    total: p.total,
+    zinsJahr: p.zinsJahr,
+    tilgRate,
+    auszahlungStartDate,
+    tilgStartDate: tilgStartForRest,
+    zinsbindungJahre: p.zinsbindungJahre,
+  });
+  const zinsbindungEnde = bindingStats.zinsbindungEnde;
+  const sondertilgungBisBindung = bindingStats.sondertilgungBisBindung;
+  const tilgungGesamtBisBindung = bindingStats.tilgungGesamtBisBindung;
+  const zinsenBisBindung = bindingStats.zinsenBisBindung;
+  const kalkTilgRateMitSonder = bindingStats.kalkTilgRateMitSonder;
+  const restschuldZumBindungsende = bindingStats.restschuldZumBindungsende;
   const verlaufMonatsrate = buildMonatsratenAnteileBisZinsbindung(p.total, p.zinsJahr, tilgRate, tilgStartForRest, zinsbindungEnde);
   const restschuldVerlauf = buildRestschuldVerlaufBisZinsbindung(
     p.total,
@@ -1292,7 +1522,7 @@ function calculate() {
 
   document.getElementById('metrics').innerHTML = `
     <div class="metric">
-      <div class="metric-label">Erste Gesamtrate</div>
+      <div class="metric-label">Erste Gesamtrate <span class="kpi-info" title="Monatliche Gesamtbelastung in der ersten Auszahlungsphase.">i</span></div>
       <div class="metric-value">${eur(phases[0].combined)}</div>
     </div>
     <div class="metric" style="border-color:rgba(196,106,90,0.35)">
@@ -1301,30 +1531,30 @@ function calculate() {
       <div style="font-size:10px;color:var(--hint);margin-top:3px;font-family:var(--font-mono)">inkl. ${eur(p.miete)} Miete</div>
     </div>
     <div class="metric accent">
-      <div class="metric-label">Rate ab Bauabnahme</div>
+      <div class="metric-label">Rate ab Bauabnahme <span class="kpi-info" title="Monatliche Rate nach letzter Tranche (ohne KfW).">i</span></div>
       <div class="metric-value">${eur(bauabnahmePhase.combined)}</div>
     </div>
     <div class="metric accent">
-      <div class="metric-label">Darlehen schuldenfrei in ca.</div>
+      <div class="metric-label">Darlehen schuldenfrei in ca. <span class="kpi-info" title="Schaetzung auf Basis Annuitaet, Zinssatz, Tilgung und Sondertilgungen.">i</span></div>
       <div class="metric-value">${hauptJahre ? hauptJahre + ' Jahren' : '–'}</div>
     </div>
     <div class="metric">
-      <div class="metric-label">Kalk. Tilgungsrate inkl. Sondertilgung (bis Zinsbindung)</div>
+      <div class="metric-label">Kalk. Tilgungsrate inkl. Sondertilgung (bis Zinsbindung) <span class="kpi-info" title="Durchschnittliche effektive Tilgung pro Jahr bis Ende Zinsbindung.">i</span></div>
       <div class="metric-value">${fmt(kalkTilgRateMitSonder, 2)} % p.a.</div>
       <div style="font-size:10px;color:var(--hint);margin-top:3px;font-family:var(--font-mono)">
         ${zinsbindungEnde ? `Zeitraum bis ${deDate(zinsbindungEnde)}${sondertilgungBisBindung > 0 ? ` · inkl. ${eur(sondertilgungBisBindung)} Sondertilgung` : ''}` : '–'}
       </div>
     </div>
     <div class="metric accent">
-      <div class="metric-label">Gezahlte Tilgung bis Zinsbindung</div>
+      <div class="metric-label">Gezahlte Tilgung bis Zinsbindung <span class="kpi-info" title="Regulaere Tilgung plus Sondertilgungen bis Ende Zinsbindung.">i</span></div>
       <div class="metric-value">${eur(tilgungGesamtBisBindung)}</div>
     </div>
     <div class="metric">
-      <div class="metric-label">Gezahlte Zinsen bis Zinsbindung</div>
+      <div class="metric-label">Gezahlte Zinsen bis Zinsbindung <span class="kpi-info" title="Kumulierte Sollzinsen bis Ende der Zinsbindung.">i</span></div>
       <div class="metric-value">${eur(zinsenBisBindung)}</div>
     </div>
     <div class="metric combined">
-      <div class="metric-label">Restschuld Ende Zinsbindung</div>
+      <div class="metric-label">Restschuld Ende Zinsbindung <span class="kpi-info" title="Verbleibender Darlehenssaldo zum Stichtag der Zinsbindung.">i</span></div>
       <div class="metric-value">${eur(restschuldZumBindungsende)}</div>
       <div style="font-size:10px;color:var(--hint);margin-top:3px;font-family:var(--font-mono)">
         ${zinsbindungEnde ? `zum ${deDate(zinsbindungEnde)} (${fmt(p.zinsbindungJahre, 1)} J.)${sondertilgungBisBindung > 0 ? ` · inkl. ${eur(sondertilgungBisBindung)} Sondertilgung` : ''}` : '–'}
